@@ -48,3 +48,11 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Editor/IDE
+.vscode/
+.idea/
+
+# Dependency directories
+dist/
+build/
+*.egg-info/
