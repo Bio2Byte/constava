@@ -1,5 +1,5 @@
 import argparse
-from template.example import Example
+from template_2.example import Example
 
 
 class TemplateMain:
@@ -10,7 +10,7 @@ class TemplateMain:
         Example(parsed_args.message).demo()
 
 def main():
-    print("Constava 0.0.1 - Template 1")
+    print("Constava 0.0.1 - Template 2")
     parser = argparse.ArgumentParser(description='Constava - Example')
     parser.add_argument('-m', '--message', default='hello world')
 

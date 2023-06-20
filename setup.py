@@ -23,6 +23,7 @@ setup(
     entry_points={
         "console_scripts": [
             "constava_template = template.__main__:main",
+            "constava_template_2 = template_2.__main__:main",
         ],
     },
 )
