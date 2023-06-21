@@ -28,9 +28,9 @@ class ConstavaABC(metaclass=abc.ABCMeta):
         state_var = np.sqrt(np.mean(squard_dev))
         return state_var
 
-    @abc.abstractmethod
-    def getLongName(self):
-        pass
+    # @abc.abstractmethod
+    # def getLongName(self):
+    #     pass
 
     @abc.abstractmethod
     def getShortName(self):
@@ -46,11 +46,11 @@ class ConstavaWindow(ConstavaABC):
     def __init__(self, window_size: int):
         self.window_size = window_size
 
-    def getLongName(self):
-        return f"window({self.window_size:d})"
+    # def getLongName(self):
+    #     return f"window({self.window_size:d})"
 
     def getShortName(self):
-        return f"win{self.window_size:d}"
+        return f"window({self.window_size:d})"
 
     def _subsampling(self, logpdf):
         # Subsampling using consecutive windows of window_size samples
@@ -69,11 +69,11 @@ class ConstavaBootstrap(ConstavaABC):
         self.sample_size = sample_size
         self.n_samples = n_samples
 
-    def getLongName(self):
-        return f"bootstrapping({self.n_samples:d} samples of size {self.sample_size:d})"
+    # def getLongName(self):
+    #     return f"bootstrapping({self.n_samples:d} samples of size {self.sample_size:d})"
 
     def getShortName(self):
-        return f"bs{self.sample_size:d}x{self.n_samples:d}"
+        return f"bootstrapping({self.sample_size:d},{self.n_samples:d})"
 
     def _subsampling(self, logpdf):
         # Get dimensions of the input data

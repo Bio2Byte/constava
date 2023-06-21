@@ -3,8 +3,7 @@ import os
 CONSTAVA_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONSTAVA_ROOT_DIR = os.path.dirname(CONSTAVA_SOURCE_DIR)
 CONSTAVA_DATA_DIR = os.path.join(CONSTAVA_ROOT_DIR, "data")
-
-TRAINING_DATA_PATH = os.path.join(CONSTAVA_SOURCE_DIR, "..", "data", "conformational_states.json")
+DEFAULT_TRAINING_DATA_PATH = os.path.join(CONSTAVA_DATA_DIR, "constava_default_training_data.json")
 
 aminoacids1to3 = dict(
     A = "ALA", C = "CYS", D = "ASP", E = "GLU", F = "PHE",

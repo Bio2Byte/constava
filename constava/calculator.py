@@ -1,29 +1,9 @@
-from dataclasses import dataclass
 from typing import List
-import numpy as np
 import tqdm
-from constava.ensembles import ProteinEnsemble, ResidueEnsemble
-from constava.methods import ConstavaABC
-from constava.pdfestimators import StatePdfABC
-
-
-@dataclass
-class ConfStateResultsEntry:
-    residue: ResidueEnsemble = None
-    state_propensities: np.ndarray = None
-    state_variability: float = None
-
-
-class ConfStateResults:
-    """ A result class for ConfStateCalculator """
-    def __init__(self, method: ConstavaABC, state_labels: List[str], entries: List[ConfStateResultsEntry] = None):
-        self.method = method
-        self.state_labels = state_labels
-        self.entries = entries or []
-
-    def add_entry(self, new_entry: ConfStateResultsEntry):
-        self.entries.append(new_entry)
-        self.entries.sort(key=lambda x: x.residue.respos)
+from .ensembles import ProteinEnsemble
+from .methods import ConstavaABC
+from .pdfestimators import StatePdfABC
+from .results import ConfStateResults, ConfStateResultsEntry
 
 
 class ConfStateCalculator:
@@ -38,7 +18,7 @@ class ConfStateCalculator:
     def calculate(self, ensemble: ProteinEnsemble) -> List[ConfStateResults]:
         
         results = [
-            ConfStateResults(method, self.pdfestimator.labels) 
+            ConfStateResults(method, ensemble, self.pdfestimator.labels) 
             for method in self.methods
         ]
 

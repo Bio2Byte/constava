@@ -4,7 +4,7 @@ import argparse
 from constava.calculator import ConfStateCalculator
 from constava.ensemblereader import EnsembleReader
 from constava.methods import ConstavaBootstrap, ConstavaWindow
-from constava.resultwriter import ResultWriter
+from constava.resultswriter import ResultWriter
 from constava.pdfestimators import KDEStatePdf
 
 
@@ -37,7 +37,7 @@ def parse_commandline_arguments(arguments):
     required_group = parser.add_argument_group("required arguments")
     required_group.add_argument("-i", "--infile", nargs="+", type=str, required=True,
                                 help="Input file with dihedral angles")
-    required_group.add_argument("-o", "--outprefix", type=str, required=True, help="Output file")
+    required_group.add_argument("-o", "--output-file", type=str, required=True, help="Output file")
 
     format_group = parser.add_argument_group("file format options")
     format_group.add_argument("--input-format", choices=["auto", "xvg", "csv"], default="auto",
@@ -117,10 +117,7 @@ def main():
 
     # Write output
     writer = ResultWriter(args.output_format, args.precision)
-    for result in results:
-        method_name = result.method.getShortName()
-        output_file = f"{args.outprefix}_{method_name}.{args.output_format.lower()}"
-        writer.writeToFile(result, output_file)
+    writer.writeToFile(results, args.output_file)
     
 if __name__ == "__main__":
     sys.exit(main())

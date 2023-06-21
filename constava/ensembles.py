@@ -20,6 +20,11 @@ class ResidueEnsemble:
     def __repr__(self):
         return f"<{self.restype}:{self.respos}>"
     
+    def __lt__(self, other):
+        if not isinstance(other, self.__class__):
+            raise TypeError(f"Cannot compare {self.__class__.__name__} with {other.__class__.__name__}")
+        return self.respos < other.respos
+    
     def to_dict(self):
         _data = {
             "restype":  self.restype,
@@ -63,7 +68,7 @@ class ProteinEnsemble:
                 continue
             elif result is None and isinstance(value, np.ndarray):
                 result = np.full((self.n_residues,)+value.shape, fillvalue)
-            else:
+            elif result is None:
                 result = np.full((self.n_residues,), fillvalue)
             result[i] = value
         return result
@@ -75,7 +80,7 @@ class ProteinEnsemble:
         for res in new_residues:
             res.owner = self
             self._residues.append(res)
-        self._residues.sort(key=lambda res: res.respos)
+        self._residues.sort()
         # self.__dict__.pop('sequence', None)
         # self.__dict__.pop('dynamics', None)
         # self.__dict__.pop('conformation', None)
