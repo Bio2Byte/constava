@@ -1,12 +1,17 @@
 import abc
 import json
 import pickle
-from typing import Generator, List, Tuple
+from typing import List
 import numpy as np
 from sklearn.neighbors import KernelDensity
+from constava.ensemblereader import check_dihedral_range
 
 
 class StatePdfABC(metaclass=abc.ABCMeta):
+    """ 
+    The AbstractBaseClass for all functions providing probability density 
+    function estimates for various states.
+    """
     
     @abc.abstractmethod
     def get_logpdf(self, data: np.ndarray) -> np.ndarray:
@@ -34,9 +39,6 @@ class KDEStatePdf(StatePdfABC):
     @property
     def labels(self):
         return list(self.kde_labels)
-
-    # def __iter__(self) -> Generator[Tuple[str, KernelDensity], None, None]:
-    #     return zip(self.kde_labels, self.kdes)
 
     def get_logpdf(self, data: np.ndarray) -> np.ndarray:
         result = np.stack([
@@ -69,6 +71,7 @@ class KDEStatePdf(StatePdfABC):
                 data = np.radians(data)
             else:
                 data = np.array(data)
+            check_dihedral_range(data)
             kde = KernelDensity(bandwidth=bandwidth)
             kde.fit(data)
             kdes.append(kde)
@@ -76,5 +79,22 @@ class KDEStatePdf(StatePdfABC):
         return cls(kdes=kdes, kde_labels=kde_labels)
 
 
-class GridStatePdf(KDEStatePdf):
-    pass
+
+class GridStatePdf(StatePdfABC):
+    """ A subclass of KDEStatePdf designed for faster inference. """
+
+    PhiPsiGrid = np.meshgrid(np.linspace(-np.pi, np.pi, 100), 
+                            np.linspace(-np.pi, np.pi, 100))
+
+    def __init__(self, kdeobj: KDEStatePdf):
+        self.kdeobj = kdeobj
+        self.pdfgrids = self._construct_grids()
+        #self.phivalues, psivalues = self.PhiPsiGrid
+
+    @property
+    def labels(self):
+        return list(self.kdeobj.kde_labels)
+    
+    def _construct_grids(self):
+        phivalues, psivalues = map(lambda a: a.flatten(), self.PhiPsiGrid)
+        #self.kdeobj.

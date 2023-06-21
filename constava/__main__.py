@@ -1,7 +1,9 @@
-import sys
+import sys, os
 import argparse
+from warnings import warn
 
 from constava.calculator import ConfStateCalculator
+from constava.constants import DEFAULT_KDE_PATH, DEFAULT_TRAINING_DATA_PATH
 from constava.ensemblereader import EnsembleReader
 from constava.methods import ConstavaBootstrap, ConstavaWindow
 from constava.resultswriter import ResultWriter
@@ -34,51 +36,70 @@ def parse_commandline_arguments(arguments):
             "states as keys and a list of lists [[phi, psi], [phi, psi], ...] as values."),
         formatter_class=CustomFormatter)
 
-    required_group = parser.add_argument_group("required arguments")
-    required_group.add_argument("-i", "--infile", nargs="+", type=str, required=True,
-                                help="Input file with dihedral angles")
-    required_group.add_argument("-o", "--output-file", type=str, required=True, help="Output file")
-
-    format_group = parser.add_argument_group("file format options")
-    format_group.add_argument("--input-format", choices=["auto", "xvg", "csv"], default="auto",
-                              help="Format of input file")
-    format_group.add_argument("--output-format", choices=["auto", "csv", "json"], default="auto",
-                              help="Format of output file")
+    io_group = parser.add_argument_group("Input/Output Options")
+    io_group.add_argument("-i", "--input-file", nargs="+", type=str, help="Input file with dihedral angles")
+    io_group.add_argument("-o", "--output-file", type=str, help="Output file")
+    io_group.add_argument("--input-format", choices=["auto", "xvg", "csv"], default="auto",
+                        help="Format of input file")
+    io_group.add_argument("--input-degrees", action="store_true",
+                        help="Add this flag if input is provided in degrees (instead of radians)")
+    io_group.add_argument("--output-format", choices=["auto", "csv", "json"], default="auto",
+                        help="Format of output file")
 
     kde_group = parser.add_argument_group("KDE options")
-    kde_group.add_argument("-k", "--kdes", type=str, help="Load KDEs from the given file")
-    kde_group.add_argument("-d", "--training-data", type=str, help=(
-        "Train KDEs with given data. This must be provided in a json file, with "
-        "the name of the conformational states as keys and a list of lists "
-        "[[phi, psi], [phi, psi], ...] as values"))
-    kde_group.add_argument("--dump-kde", type=str, help=(
-        "If desired to dump trained KDEs, write filename for to save "
-        "KDEs. File format must be .XXX"))
-    kde_group.add_argument("--kde-bandwidth", type=float, default=.13)
+    kde_group.add_argument("-k", "--kdes", metavar="<file.pkl>", help="Load KDEs from the given file")
+    kde_group.add_argument("-d", "--kde-from-data", metavar="<data.json>", help=(
+        "Fir KDEs from the given data. The data is provided in a json file, with "
+        "the name of the conformational states as keys and a list of lists [[phi, "
+        "psi], [phi, psi], ...] as values"))
+    kde_group.add_argument("--kde-from-degrees", action="store_true", help=(
+        "Add this flag if the data to fit the KDEs is provided in degrees (instead of radians)"))
+    kde_group.add_argument("--dump-kdes", metavar="<file.pkl>", type=str, help=(
+        "Dump the fitted KDEs as a pickled file, so that they can be reused "
+        "later on using the --kdes flag."))
+    kde_group.add_argument("--kde-bandwidth", metavar="<float>", type=float, default=.13)
     #kde_group.add_argument("--use-publication-kdes", type=str,
     #                       help="Load KDEs used in publication. This requires sklearn version x.x.xx")
 
-    misc_group = parser.add_argument_group("miscellaneous options")
-    misc_group.add_argument("--window", type=int, nargs='+',
-                            help="Subsampling using moving reading-frame of size <Int>")
-    misc_group.add_argument("--bootstrap", type=int, nargs='+', help="Subsampling using <Int> bootstrapped samples")
-    misc_group.add_argument("--bootstrap-samples", type=int, default=500, help="If bootstrap, sample <Int> times")
-    misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
-    misc_group.add_argument("--degrees", action="store_true",
-                            help="Convert degrees to radians. This is REQUIRED if the data is provided in degrees")
+    misc_group = parser.add_argument_group("Miscellaneous Options")
+    misc_group.add_argument("--window", metavar="<int>", type=int, nargs='+', help="Subsampling using moving reading-frame of size <Int>")
+    misc_group.add_argument("--bootstrap", metavar="<int>", type=int, nargs='+', help="Subsampling using <Int> bootstrapped samples")
+    misc_group.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help="If bootstrap, sample <Int> times")
+    #misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
     misc_group.add_argument("--precision", type=int, default=4)
 
-    # Tweak the parameters so if nothing is provided, the bootstraps used in the publication are returned.
-    parsed_arguments = parser.parse_args(arguments)
-    if parsed_arguments.bootstrap is None and parsed_arguments.window is None:
-        parsed_arguments.bootstrap = [3, 25]
-    elif parsed_arguments.bootstrap is None and parsed_arguments.window is not None:
-        parsed_arguments.bootstrap = []
+    # Do actual parameter parsing
+    args = parser.parse_args(arguments)
 
-    if parsed_arguments.window is None:
-        parsed_arguments.window = []
+    # Some validity checks for Input/output
+    if args.input_file is not None and args.output_file is None:
+        raise argparse.ArgumentError("Missing argument: --output-file")
+    if args.input_file is None and args.output_file is not None:
+        raise argparse.ArgumentError("Missing argument: --input-file")
+    if args.input_file is None and args.output_file is None and args.kde_from_data is None:
+        raise argparse.ArgumentError((
+            "Missing argument: You need to provide either input and output file "
+            "or kde-training-data"))
+    
+    # Some validity checks for KDEs
+    if args.kdes is not None and args.kde_from_data is not None:
+        warn("Loading KDEs from provided file. Training data will be ignored")
+    if args.kdes is None and args.kde_from_data is None:
+        if os.path.isfile(DEFAULT_KDE_PATH):
+            args.kdes = DEFAULT_KDE_PATH
+        else:
+            args.kde_from_data = DEFAULT_TRAINING_DATA_PATH
+            args.dump_kdes = DEFAULT_KDE_PATH
 
-    return parsed_arguments
+    # Some validity checks for Misc
+    if args.bootstrap is None and args.window is None:
+        args.bootstrap = [3, 25]
+    elif args.bootstrap is None and args.window is not None:
+        args.bootstrap = []
+    if args.window is None:
+        args.window = []
+
+    return args
 
 
 def main():
@@ -87,23 +108,23 @@ def main():
 
     # Read input files
     reader = EnsembleReader(filetype_str = args.input_format, 
-                            degrees2radians = args.degrees)
-    ensemble = reader.readFiles(*args.infile)
+                            degrees2radians = args.input_degrees)
+    ensemble = reader.readFiles(*args.input_file)
 
     # Load/Fit KDEs
     if args.kdes is not None:
         pdfestimator = KDEStatePdf.from_pickle(args.kdes)
-    elif args.training_data is not None:
+    elif args.kde_from_data is not None:
         pdfestimator = KDEStatePdf.from_fitting(
-            args.training_data,
+            args.kde_from_data,
             bandwidth = args.kde_bandwidth,
-            degrees2radians=args.degrees)
+            degrees2radians = args.kde_from_degrees)
     else:
         # TODO raise no KDE Exception
         pass
-    # IF dump_kde, THEN save the KDEs
-    if args.dump_kde is not None:
-        pdfestimator.dump_pickle(args.dump_kde)
+    # IF dump_kdes, THEN save the KDEs
+    if args.dump_kdes is not None:
+        pdfestimator.dump_pickle(args.dump_kdes)
 
     # Load the calculation methods
     cscalc = ConfStateCalculator(pdfestimator)

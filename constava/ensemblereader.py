@@ -1,5 +1,6 @@
 import abc, os, re
 from typing import List
+from warnings import warn
 import numpy as np
 import pandas as pd
 from .ensembles import ProteinEnsemble, ResidueEnsemble
@@ -8,17 +9,25 @@ from .ensembles import ProteinEnsemble, ResidueEnsemble
 class UnknownFileStructureError(ValueError):
     pass
 
+class DihedralRangeError(ValueError):
+    pass
+
+class DihedralRangeWarning(UserWarning):
+    pass
+
+def check_dihedral_range(arr: np.ndarray) -> bool:
+    vmin, vmax = np.min(arr), np.max(arr)
+    if vmin < -np.pi or vmax > np.pi:
+        raise DihedralRangeError(f"Dihedrals outside the range [-pi, pi] detected: [{vmin:.3f}, {vmax:.3f}]")
+    elif vmin >= np.radians(np.pi) and vmax <= np.radians(np.pi):
+        warn(("Provided dihedrals a very small: [{vmin:.3f}, {vmax:.3f}]. "
+            "Please check that convertion to radians was only applied once."), 
+            DihedralRangeWarning())
 
 class ReaderABC(metaclass=abc.ABCMeta):
 
     def __init__(self, degrees2radians: bool = False):
         self.degrees2radians = degrees2radians
-
-    @staticmethod
-    def checkDataRange(arr: np.ndarray, vmin=-np.pi, vmax=np.pi) -> bool:
-        if (arr < vmin).any() or (arr > vmax).any():
-            return False
-        return True
 
     @abc.abstractclassmethod
     def checkFileFormat(self, *input_files: str) -> bool:
@@ -37,7 +46,6 @@ class ReaderABC(metaclass=abc.ABCMeta):
 class DihedralCsvReader(ReaderABC):
     """
     """
-
     @classmethod
     def checkFileFormat(cls, *input_files: str) -> bool:
         for infile in input_files:
@@ -60,7 +68,7 @@ class DihedralCsvReader(ReaderABC):
                 ["Phi[rad]", "Psi[rad]"]].to_numpy()
             if self.degrees2radians:
                 phipsi = np.radians(phipsi)
-            assert self.checkDataRange(phipsi), "Dihedrals outside the range [-pi, pi] detected!"
+            check_dihedral_range(phipsi) # Throws errors/warnings if data is not in radians
             residue_list.append(
                 ResidueEnsemble(restype=resname, respos=resid, phipsi=phipsi))
         return ProteinEnsemble(residue_list)
@@ -94,7 +102,7 @@ class GmxChiReader(ReaderABC):
             phipsi = np.loadtxt(infile, comments=["#", "@"])
             if self.degrees2radians:
                 phipsi = np.radians(phipsi)
-            assert self.checkDataRange(phipsi), "Dihedrals outside the range [-pi, pi] detected!"
+            check_dihedral_range(phipsi) # Throws errors/warnings if data is not in radians
             residue_list.append(
                 ResidueEnsemble(restype=restype, respos=respos, phipsi=phipsi))
         return ProteinEnsemble(residue_list)
