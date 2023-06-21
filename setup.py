@@ -20,10 +20,18 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
+    install_requires=[
+        "MDAnalysis",
+        "numpy",
+        "pandas",
+        "scikit-learn",
+    ],
     entry_points={
         "console_scripts": [
             "constava_template = template.__main__:main",
             "constava_template_2 = template_2.__main__:main",
+            "constava = constava.__main__:main",
+
         ],
     },
 )

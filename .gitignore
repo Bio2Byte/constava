@@ -56,3 +56,6 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# Custom ignores
+conformine_training_dataset/
