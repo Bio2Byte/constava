@@ -7,7 +7,7 @@ from constava.constants import DEFAULT_KDE_PATH, DEFAULT_TRAINING_DATA_PATH
 from constava.ensemblereader import EnsembleReader
 from constava.methods import ConstavaBootstrap, ConstavaWindow
 from constava.resultswriter import ResultWriter
-from constava.pdfestimators import KDEStatePdf
+from constava.pdfestimators import KDEStatePdf, GridStatePdf
 
 
 def parse_commandline_arguments(arguments):
@@ -65,7 +65,7 @@ def parse_commandline_arguments(arguments):
     misc_group.add_argument("--window", metavar="<int>", type=int, nargs='+', help="Subsampling using moving reading-frame of size <Int>")
     misc_group.add_argument("--bootstrap", metavar="<int>", type=int, nargs='+', help="Subsampling using <Int> bootstrapped samples")
     misc_group.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help="If bootstrap, sample <Int> times")
-    #misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
+    misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
     misc_group.add_argument("--precision", type=int, default=4)
 
     # Do actual parameter parsing
@@ -112,10 +112,11 @@ def main():
     ensemble = reader.readFiles(*args.input_file)
 
     # Load/Fit KDEs
+    PDFEstimator = GridStatePdf if  args.quick else KDEStatePdf
     if args.kdes is not None:
-        pdfestimator = KDEStatePdf.from_pickle(args.kdes)
+        pdfestimator = PDFEstimator.from_pickle(args.kdes)
     elif args.kde_from_data is not None:
-        pdfestimator = KDEStatePdf.from_fitting(
+        pdfestimator = PDFEstimator.from_fitting(
             args.kde_from_data,
             bandwidth = args.kde_bandwidth,
             degrees2radians = args.kde_from_degrees)
