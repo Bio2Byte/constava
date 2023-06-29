@@ -65,6 +65,7 @@ def parse_commandline_arguments(arguments):
     misc_group.add_argument("--window", metavar="<int>", type=int, nargs='+', help="Do inference using a moving reading-frame of <int> consecutive samples.")
     misc_group.add_argument("--bootstrap", metavar="<int>", type=int, nargs='+', help="Do inference using <Int> samples obtained through bootstrapping. (By default a run with 3 and 25 is performed.)")
     misc_group.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help="If bootstrap, sample <Int> times from the input data (default: 500)")
+    misc_group.add_argument("--seed", metavar="<int>", type=int, default=None, required=False, help="Set random seed for bootstrap sampling (default: None)")
     #misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
     misc_group.add_argument("--precision", type=int, default=4, help='Sets de number of decimals in the output files. By default, 4 decimal.')
 

@@ -101,7 +101,9 @@ Miscellaneous Options:
                         Do inference using <Int> samples obtained through bootstrapping. (By default a run with 3 and 25 is performed.)
   --bootstrap-samples <int>
                         If bootstrap, sample <Int> times from the input data (default: 500)
-  --precision PRECISION <int> Sets de number of decimals in the output files (default: 4)
+  --seed <int>          Set random seed for bootstrap sampling (default: None)
+  --precision PRECISION <int> 
+                        Sets de number of decimals in the output files (default: 4)
 ```
 
 #### Shell execution example

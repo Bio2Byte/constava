@@ -1,5 +1,6 @@
 import abc
 import numpy as np
+from typing import Optional
 
 
 class ConstavaABC(metaclass=abc.ABCMeta):
@@ -65,9 +66,10 @@ class ConstavaWindow(ConstavaABC):
 
 class ConstavaBootstrap(ConstavaABC):
 
-    def __init__(self, sample_size: int, n_samples = 500):
+    def __init__(self, sample_size: int, n_samples = 500, seed: Optional[int] = None):
         self.sample_size = sample_size
         self.n_samples = n_samples
+        self.seed = seed
 
     # def getLongName(self):
     #     return f"bootstrapping({self.n_samples:d} samples of size {self.sample_size:d})"
@@ -78,9 +80,11 @@ class ConstavaBootstrap(ConstavaABC):
     def _subsampling(self, logpdf):
         # Get dimensions of the input data
         n_states, n_measurements = logpdf.shape
+
         # Randomly select the <n_samples> samples by bootstrapping, with each
         # sample containing exactly <sample_size> measurements from the original
         # distribution. -> Array[n_states, n_samples, sample_size]
+        np.random.seed(self.seed)
         samples = np.random.randint(n_measurements, size=self.sample_size*self.n_samples)
         logpdf = np.reshape(
             logpdf[:,samples], (n_states, self.n_samples, self.sample_size), 
