@@ -22,7 +22,7 @@ class ConfStateCalculator:
             for method in self.methods
         ]
 
-        for res in tqdm.tqdm(ensemble.get_residues()):
+        for res in tqdm.tqdm(ensemble.get_residues(), total=ensemble.n_residues, unit='residues'):
             logpdf = self.pdfestimator.get_logpdf(res.phipsi)
 
             for meth, result in zip(self.methods, results):

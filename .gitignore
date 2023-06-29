@@ -59,4 +59,4 @@ build/
 
 # Custom ignores
 conformine_training_dataset/
-data/*.pkl
+constava/data/*.pkl

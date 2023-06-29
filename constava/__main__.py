@@ -62,11 +62,11 @@ def parse_commandline_arguments(arguments):
     #                       help="Load KDEs used in publication. This requires sklearn version x.x.xx")
 
     misc_group = parser.add_argument_group("Miscellaneous Options")
-    misc_group.add_argument("--window", metavar="<int>", type=int, nargs='+', help="Subsampling using moving reading-frame of size <Int>")
-    misc_group.add_argument("--bootstrap", metavar="<int>", type=int, nargs='+', help="Subsampling using <Int> bootstrapped samples")
-    misc_group.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help="If bootstrap, sample <Int> times")
-    misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
-    misc_group.add_argument("--precision", type=int, default=4)
+    misc_group.add_argument("--window", metavar="<int>", type=int, nargs='+', help="Do inference using a moving reading-frame of <int> consecutive samples.")
+    misc_group.add_argument("--bootstrap", metavar="<int>", type=int, nargs='+', help="Do inference using <Int> samples obtained through bootstrapping. (By default a run with 3 and 25 is performed.)")
+    misc_group.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help="If bootstrap, sample <Int> times from the input data (default: 500)")
+    #misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
+    misc_group.add_argument("--precision", type=int, default=4, help='Sets de number of decimals in the output files. By default, 4 decimal.')
 
     # Do actual parameter parsing
     args = parser.parse_args(arguments)
