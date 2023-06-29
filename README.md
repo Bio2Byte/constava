@@ -131,7 +131,7 @@ This example would run do the following things:
 [//]: # (Feel free to add new directories and add the command line inside `setup.py` as it was made for the template example.)
 
 #### Prerequisites
-- Python 3.x
+- Python 3.6 or higher
 - pip
 
 
@@ -172,7 +172,7 @@ cons.save_results(output_file='the_results.csv')
 <!-- LICENSE -->
 ## License
 
-Distributed under the XXXX License. See `LICENSE.txt` for more information.
+Distributed under the GNU General Public License v3 (GPLv3) License.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
