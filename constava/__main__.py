@@ -7,7 +7,7 @@ from constava.constants import DEFAULT_KDE_PATH, DEFAULT_TRAINING_DATA_PATH
 from constava.ensemblereader import EnsembleReader
 from constava.methods import ConstavaBootstrap, ConstavaWindow
 from constava.resultswriter import ResultWriter
-from constava.pdfestimators import KDEStatePdf
+from constava.pdfestimators import KDEStatePdf, GridStatePdf
 
 
 def parse_commandline_arguments(arguments):
@@ -113,10 +113,11 @@ def main():
     ensemble = reader.readFiles(*args.input_file)
 
     # Load/Fit KDEs
+    PDFEstimator = GridStatePdf if  args.quick else KDEStatePdf
     if args.kdes is not None:
-        pdfestimator = KDEStatePdf.from_pickle(args.kdes)
+        pdfestimator = PDFEstimator.from_pickle(args.kdes)
     elif args.kde_from_data is not None:
-        pdfestimator = KDEStatePdf.from_fitting(
+        pdfestimator = PDFEstimator.from_fitting(
             args.kde_from_data,
             bandwidth = args.kde_bandwidth,
             degrees2radians = args.kde_from_degrees)

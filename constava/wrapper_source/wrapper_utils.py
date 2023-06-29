@@ -9,7 +9,7 @@ from constava.constants import DEFAULT_KDE_PATH, DEFAULT_TRAINING_DATA_PATH
 from constava.ensemblereader import EnsembleReader
 from constava.methods import ConstavaBootstrap, ConstavaWindow
 from constava.resultswriter import ResultWriter
-from constava.pdfestimators import KDEStatePdf
+from constava.pdfestimators import KDEStatePdf, GridStatePdf
 
 
 class ConStaVa:
@@ -49,7 +49,7 @@ class ConStaVa:
 		self.output_file = None
 		self.output_format = 'auto'
 		self.input_degrees = False
-		# self.quick = False
+		self.quick = False
 		self.precision = 4
 		self.kde_bandwidth = 0.13
 
@@ -86,7 +86,8 @@ class ConStaVa:
 		Returns:
 			None
 		"""
-		self.pdfestimator = KDEStatePdf.from_fitting(
+		PDFEstimator = GridStatePdf if self.quick else KDEStatePdf 
+		self.pdfestimator = PDFEstimator.from_fitting(
 			self.kde_from_data,
 			bandwidth=self.kde_bandwidth,
 			degrees2radians=self.input_degrees)
@@ -103,10 +104,11 @@ class ConStaVa:
 			None
 		"""
 		self.kdes = kdes_path  # Needs to be pickle (I think)
+		PDFEstimator = GridStatePdf if self.quick else KDEStatePdf
 		if self.kdes is None:
 			if os.path.isfile(DEFAULT_KDE_PATH):
 				self.kdes = DEFAULT_KDE_PATH
-		self.pdfestimator = KDEStatePdf.from_pickle(self.kdes)
+		self.pdfestimator = PDFEstimator.from_pickle(self.kdes)
 
 	def save_kde(self, dump_kdes: Optional[str] = None):
 		"""
