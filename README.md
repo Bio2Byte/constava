@@ -1,43 +1,35 @@
-# Constava
+<a id="readme-top"></a>
+
+<!-- PROJECT LOGO -->
+<br /> 
+<div align="center">
+  <a href="bio2byte.be/b2btools" target="_blank" ref="noreferrer noopener">
+  <img src="https://pbs.twimg.com/profile_images/1247824923546079232/B9b_Yg7n_400x400.jpg" width="224px"/>
+   </a>
+
+
+# ConStaVa
+</div>
 
 ## Description
-Provide a brief description of your project here.
+This software is used to calculate Conformational State Variability (ConStaVa) from a protein structure ensemble.
+This is done by calculating the propensities for each conformational state for each residue in a protein ensemble. 
+Then, ConStaVa is calculated from the change among Conformational States, inferred from trained Kernel Density 
+Estimators (KDEs).
+
+By default, this code retrains the Conformational States KDEs with the data set which we
+provide, as described in the associated publication. This will generate KDEs that are compatible with your current
+SciKit-learn version.
+
+If the user wishes to train KDEs with a different set of dihedrals, a new set of dihedrals can be employed.
+ This set must be provided in a json file, with the name of the conformational states as keys and a list of lists [[phi, psi], [phi, psi], ...] as values.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Getting Started
 
-### Quick start
-
-**To setup the source code:**
-
-- Build: `make build`
-- Install locally: `make install`
-- Uninstall locally: `make uninstall`
-- Publish on PyPI: `make publish`
-- Clean up build and dist files: `make clean`
-
-**To run the template example:**
-
-Either as a Python module:
-
-```
-python -m template -m "Hello scientific community"
-```
-
-Or once you installed the Python package locally (`make install`):
-
-```
-constava_template -m "Hello scientific community"
-```
-
-**To add more modules:**
-Feel free to add new directories and add the command line inside `setup.py` as it was made for the template example.
-
-### Prerequisites
-- Python 3.x
-- pip
-
-### Installation
-To install the project, follow these steps:
+### Shell execution as a python package
+#### Installation
 
 1. Clone the repository:
    ```
@@ -56,66 +48,271 @@ To install the project, follow these steps:
    pip install -r requirements.txt
    ```
 
-### Usage
+Then, from the root directory run:
 
-#### Build
-To build the project, run the following command:
+- Build: `make build`
+- Install locally: `make install`
 
-```
-make build
-```
+If the package requires to be uninstalled, run `make uninstall` in the terminal from the root directory. 
 
-This command will create the source distribution and wheel distribution files using `python3 setup.py`.
+#### Shell execution usage
 
-#### Install
-To install the project, use the following command:
+Once you installed the Python package locally (`make install`), the software's usage is as follows:
 
 ```
-make install
+usage: constava [-h] -i INFILE -o OUTFILE [--input-format {auto,xvg,csv}] [--output-format {auto,csv,json}] [-k KDE] 
+[-d TRAINING_DATA] [--kde-dump KDE_DUMP] [--use-publication-kdes USE_PUBLICATION_KDES]
+[--window WINDOW [WINDOW ...]] [--bootstrap BOOTSTRAP [BOOTSTRAP ...]] [--bootstrap-samples BOOTSTRAP_SAMPLES] 
+[--quick] [--degrees-to-radians]
 ```
 
-This command will install the latest version of the project from the `dist` directory using `pip`.
+with the flags described as: 
 
-#### Uninstall
-To uninstall the project, execute the following command:
+```shell
+optional arguments:
+  -h, --help            show this help message and exit
 
+Input/Output Options:
+  -i INPUT_FILE [INPUT_FILE ...], --input-file INPUT_FILE [INPUT_FILE ...]
+                        Input file with dihedral angles (default: None)
+  -o OUTPUT_FILE, --output-file OUTPUT_FILE
+                        Output file (default: None)
+  --input-format {auto,xvg,csv}
+                        Format of input file (default: auto)
+  --input-degrees       Add this flag if input is provided in degrees (instead of radians) (default: False)
+  --output-format {auto,csv,json}
+                        Format of output file (default: auto)
+
+KDE options:
+  -k <file.pkl>, --kdes <file.pkl>
+                        Load KDEs from the given file (default: None)
+  -d <data.json>, --kde-from-data <data.json>
+                        For KDEs from the given data. The data is provided in a json file, with the name of the 
+                        conformational states as keys and a list of lists [[phi, psi], [phi, psi], ...] as values (default: None)
+  --kde-from-degrees    Add this flag if the data to fit the KDEs is provided in degrees (instead of radians) (default: False)
+  --dump-kdes <file.pkl>
+                        Dump the fitted KDEs as a pickled file, so that they can be reused later on using the --kdes flag. (default: None)
+  --kde-bandwidth <float>
+
+Miscellaneous Options:
+  --window <int> [<int> ...]
+                        Do inference using a moving reading-frame of <int> consecutive samples.
+  --bootstrap <int> [<int> ...]
+                        Do inference using <Int> samples obtained through bootstrapping. (By default a run with 3 and 25 is performed.)
+  --bootstrap-samples <int>
+                        If bootstrap, sample <Int> times from the input data (default: 500)
+  --precision PRECISION <int> Sets de number of decimals in the output files (default: 4)
 ```
-make uninstall
+
+#### Shell execution example
+An example command to run ConStaVa would be: 
+
+```shell
+constava.py -i input_file.csv -o output_file.csv --bootstrap 5 10 15 --input-degrees
 ```
 
-This command will uninstall the project package using `pip`.
+This example would run do the following things:
+- Train the KDEs with the default data, since no additional training data was provided with the flag ```--training-data```. 
+- Process ```input_file.csv``` and automatically detect the format, since no format was specified with the flag 
+  ```--input-format```. It also converts the degrees of the phi-psi angles to radians because the flag 
+  ```input-degrees``` is provided.
+- Calculate ConStaVa for bootstrap (5, 500), (10, 500) and (15, 500), since the bootstrap size was provided with the 
+  flag ```--bootstrap``` and 500 is the default number of samples, which was not modified with the flag 
+  ```--bootstrap-samples```.
+- Output the results in ```output_file.csv```
 
-#### Publish
-To publish the project to a package repository, run the following command:
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+[//]: # ()
+[//]: # (**To add more modules:**)
+
+[//]: # (Feel free to add new directories and add the command line inside `setup.py` as it was made for the template example.)
+
+#### Prerequisites
+- Python 3.x
+- pip
+
+
+### Execution as a python library
+#### Installation
+We recommend installation via PyPI:
+
+1. Create a virtual environment (optional but recommended):
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+2. Install the python module
+    ```
+   pip install constava
+   ```
+   
+#### Python execution usage
+
+This example code will generate an output for a protein:
+
+```python
+import constava
+cons = constava.ConStaVa()
+cons.train_kde()
+
+# The argument infile accepts both shell syntax or a list of paths
+# All the files in infile should be part of the same protein ensemble
+cons.read_input_files(degrees=True, infile="../md_simulations/1akp/*.xvg")
+
+cons.calculate_results(window=[1,2,4], bootstrap=[2,3,5,25])
+cons.save_results(output_file='the_results.csv')
 ```
-make publish
-```
 
-This command will upload the distribution files to the package repository using `twine`.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-#### Clean
-To clean the project by removing the build artifacts, use the following command:
-
-```
-make clean
-```
-
-This command will remove the `dist`, `build`, and `constava.egg-info` directories.
-
-## Contributing
-
-If you would like to contribute to this project, please follow these guidelines:
-- Fork the repository
-- Create a new branch
-- Make your changes
-- Open a pull request
-
+<!-- LICENSE -->
 ## License
-Include information about the license used for the project.
 
+Distributed under the XXXX License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- AUTHORS -->
+## Authors
+
+- Jose Gavalda-Garcia<sup>&spades;</sup> 
+[![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0001-6431-3442) - 
+[jose.gavalda.garcia@vub.be](mailto:jose.gavalda.garcia@vub.be)
+
+- David Bickel<sup>&spades;</sup> 
+[![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0003-0332-8338) - 
+[david.bickel@vub.be](mailto:david.bickel@vub.be)
+
+- Wim Vranken - 
+[![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0001-7470-4324) - 
+[Personal page](https://researchportal.vub.be/en/persons/wim-vranken) - 
+[wim.
+  vranken@vub.be](mailto:wim.vranken@vub.be)
+
+<sup>&spades;</sup> Authors contributed equally to this work.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
-Mention any acknowledgments or references used in the project.
 
+We want to acknowledge the work of Adrian Diaz [![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0003-0165-1318) for the invaluable help in the distribution of this software. 
+
+<!-- CONTACT -->
 ## Contact
-Provide your contact information if users have questions or want to reach out for support.
+
+Wim Vranken - [wim.vranken@vub.be](mailto:wim.vranken@vub.be)
+
+Bio2Byte website: [https://bio2byte.be/](https://bio2byte.be/)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+[//]: # ()
+[//]: # ()
+[//]: # (### Usage)
+
+[//]: # ()
+[//]: # (#### Build)
+
+[//]: # (To build the project, run the following command:)
+
+[//]: # ()
+[//]: # (```)
+
+[//]: # (make build)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (This command will create the source distribution and wheel distribution files using `python3 setup.py`.)
+
+[//]: # ()
+[//]: # (#### Install)
+
+[//]: # (To install the project, use the following command:)
+
+[//]: # ()
+[//]: # (```)
+
+[//]: # (make install)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (This command will install the latest version of the project from the `dist` directory using `pip`.)
+
+[//]: # ()
+[//]: # (#### Uninstall)
+
+[//]: # (To uninstall the project, execute the following command:)
+
+[//]: # ()
+[//]: # (```)
+
+[//]: # (make uninstall)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (This command will uninstall the project package using `pip`.)
+
+[//]: # ()
+[//]: # (#### Publish)
+
+[//]: # (To publish the project to a package repository, run the following command:)
+
+[//]: # ()
+[//]: # (```)
+
+[//]: # (make publish)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (This command will upload the distribution files to the package repository using `twine`.)
+
+[//]: # ()
+[//]: # (#### Clean)
+
+[//]: # (To clean the project by removing the build artifacts, use the following command:)
+
+[//]: # ()
+[//]: # (```)
+
+[//]: # (make clean)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (This command will remove the `dist`, `build`, and `constava.egg-info` directories.)
+
+[//]: # ()
+[//]: # (## Contributing)
+
+[//]: # ()
+[//]: # (If you would like to contribute to this project, please follow these guidelines:)
+
+[//]: # (- Fork the repository)
+
+[//]: # (- Create a new branch)
+
+[//]: # (- Make your changes)
+
+[//]: # (- Open a pull request)
+
+[//]: # (## License)
+
+[//]: # (Include information about the license used for the project.)
+
+[//]: # ()
+[//]: # (## Acknowledgments)
+
+[//]: # (Mention any acknowledgments or references used in the project.)
+
+[//]: # ()
+[//]: # (## Contact)
+
+[//]: # (Provide your contact information if users have questions or want to reach out for support.)

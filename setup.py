@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="constava",
-    version="0.0.1",
+    version="0.0.1b",
     author="Bio2Byte",
     author_email="bio2byte@ibsquare.be",
     description="Command line tool",
@@ -15,9 +15,15 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
+        "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "Topic :: Scientific/Engineering :: Chemistry",
+        "Topic :: Scientific/Engineering :: Physics",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Education",
     ],
     python_requires=">=3.6",
     install_requires=[
@@ -28,10 +34,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "constava_template = template.__main__:main",
-            "constava_template_2 = template_2.__main__:main",
             "constava = constava.__main__:main",
-
         ],
     },
 )
