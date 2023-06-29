@@ -131,7 +131,7 @@ This example would run do the following things:
 [//]: # (Feel free to add new directories and add the command line inside `setup.py` as it was made for the template example.)
 
 #### Prerequisites
-- Python 3.x
+- Python 3.6 or higher
 - pip
 
 
