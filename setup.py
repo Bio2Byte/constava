@@ -5,11 +5,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="constava",
-    version="0.1.0b",
+    version="0.1.0b3",
     author="Wim Vranken",
     author_email="wim.vranken@vub.be",
-    description="This software is used to calculate Conformational State Variability (ConStaVa) from a protein "
-                "structure ensemble.",
+    description="This software is used to calculate conformational states probability & conformational state "
+                "variability from a protein structure ensemble.",
     license="OSI Approved :: GNU General Public License v3 (GPLv3)",
     long_description=long_description,
     long_description_content_type="text/markdown",

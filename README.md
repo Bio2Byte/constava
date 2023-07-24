@@ -8,21 +8,22 @@
    </a>
 
 
-# ConStaVa
+# Constava
 </div>
 
 ## Description
-This software is used to calculate Conformational State Variability (ConStaVa) from a protein structure ensemble.
+This software is used to calculate conformational states propensities & conformational state variability from a 
+protein structure ensemble.
 This is done by calculating the propensities for each conformational state for each residue in a protein ensemble. 
-Then, ConStaVa is calculated from the change among Conformational States, inferred from trained Kernel Density 
-Estimators (KDEs).
+Then, conformational state variability is calculated from the change among conformational states, inferred from trained 
+kernel density estimators (KDEs).
 
-By default, this code retrains the Conformational States KDEs with the data set which we
+By default, this code retrains the conformational states propensities KDEs with the data set which we
 provide, as described in the associated publication. This will generate KDEs that are compatible with your current
 SciKit-learn version.
 
 If the user wishes to train KDEs with a different set of dihedrals, a new set of dihedrals can be employed.
- This set must be provided in a json file, with the name of the conformational states as keys and a list of lists [[phi, psi], [phi, psi], ...] as values.
+This set must be provided in a json file, with the name of the conformational states as keys and a list of lists [[phi, psi], [phi, psi], ...] as values.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -106,8 +107,10 @@ Miscellaneous Options:
                         Sets de number of decimals in the output files (default: 4)
 ```
 
+
+
 #### Shell execution example
-An example command to run ConStaVa would be: 
+An example command to run Constava would be: 
 
 ```shell
 constava.py -i input_file.csv -o output_file.csv --bootstrap 5 10 15 --input-degrees
@@ -118,22 +121,17 @@ This example would run do the following things:
 - Process ```input_file.csv``` and automatically detect the format, since no format was specified with the flag 
   ```--input-format```. It also converts the degrees of the phi-psi angles to radians because the flag 
   ```input-degrees``` is provided.
-- Calculate ConStaVa for bootstrap (5, 500), (10, 500) and (15, 500), since the bootstrap size was provided with the 
+- Calculate conformational state variability for bootstrap (5, 500), (10, 500) and (15, 500), since the bootstrap size 
+  was provided with the 
   flag ```--bootstrap``` and 500 is the default number of samples, which was not modified with the flag 
   ```--bootstrap-samples```.
 - Output the results in ```output_file.csv```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-[//]: # ()
-[//]: # (**To add more modules:**)
-
-[//]: # (Feel free to add new directories and add the command line inside `setup.py` as it was made for the template example.)
-
 #### Prerequisites
 - Python 3.6 or higher
 - pip
-
 
 ### Execution as a python library
 #### Installation
@@ -169,6 +167,7 @@ cons.save_results(output_file='the_results.csv')
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+
 <!-- LICENSE -->
 ## License
 
@@ -187,6 +186,19 @@ Distributed under the GNU General Public License v3 (GPLv3) License.
 [![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0003-0332-8338) - 
 [david.bickel@vub.be](mailto:david.bickel@vub.be)
 
+- Joel Roca-Martinez 
+[![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](
+https://orcid.org/0000-0002-4313-3845) - 
+[joel.roca.martinez@vub.be](mailto:joel.roca.martinez@vub.be)
+
+- Daniele Raimondi -
+[![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0003-1157-1899) - 
+[daniele.raimondi@kuleuven.be](mailto:daniele.raimondi@kuleuven.be)
+
+- Gabriele Orlando -
+[![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0002-5935-5258) - 
+[gabriele.orlando@kuleuven.be](mailto:gabriele.orlando@kuleuven.be)
+
 - Wim Vranken - 
 [![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0001-7470-4324) - 
 [Personal page](https://researchportal.vub.be/en/persons/wim-vranken) - 
@@ -201,7 +213,7 @@ Distributed under the GNU General Public License v3 (GPLv3) License.
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-We want to acknowledge the work of Adrian Diaz [![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0003-0165-1318) for the invaluable help in the distribution of this software. 
+We thank Adrian Diaz [![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0003-0165-1318) for the invaluable help in the distribution of this software. 
 
 <!-- CONTACT -->
 ## Contact
@@ -211,110 +223,3 @@ Wim Vranken - [wim.vranken@vub.be](mailto:wim.vranken@vub.be)
 Bio2Byte website: [https://bio2byte.be/](https://bio2byte.be/)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-[//]: # ()
-[//]: # ()
-[//]: # (### Usage)
-
-[//]: # ()
-[//]: # (#### Build)
-
-[//]: # (To build the project, run the following command:)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # (make build)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (This command will create the source distribution and wheel distribution files using `python3 setup.py`.)
-
-[//]: # ()
-[//]: # (#### Install)
-
-[//]: # (To install the project, use the following command:)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # (make install)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (This command will install the latest version of the project from the `dist` directory using `pip`.)
-
-[//]: # ()
-[//]: # (#### Uninstall)
-
-[//]: # (To uninstall the project, execute the following command:)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # (make uninstall)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (This command will uninstall the project package using `pip`.)
-
-[//]: # ()
-[//]: # (#### Publish)
-
-[//]: # (To publish the project to a package repository, run the following command:)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # (make publish)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (This command will upload the distribution files to the package repository using `twine`.)
-
-[//]: # ()
-[//]: # (#### Clean)
-
-[//]: # (To clean the project by removing the build artifacts, use the following command:)
-
-[//]: # ()
-[//]: # (```)
-
-[//]: # (make clean)
-
-[//]: # (```)
-
-[//]: # ()
-[//]: # (This command will remove the `dist`, `build`, and `constava.egg-info` directories.)
-
-[//]: # ()
-[//]: # (## Contributing)
-
-[//]: # ()
-[//]: # (If you would like to contribute to this project, please follow these guidelines:)
-
-[//]: # (- Fork the repository)
-
-[//]: # (- Create a new branch)
-
-[//]: # (- Make your changes)
-
-[//]: # (- Open a pull request)
-
-[//]: # (## License)
-
-[//]: # (Include information about the license used for the project.)
-
-[//]: # ()
-[//]: # (## Acknowledgments)
-
-[//]: # (Mention any acknowledgments or references used in the project.)
-
-[//]: # ()
-[//]: # (## Contact)
-
-[//]: # (Provide your contact information if users have questions or want to reach out for support.)
