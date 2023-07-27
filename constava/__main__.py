@@ -1,3 +1,6 @@
+"""constava.__main__ is the executable for the command line functionality of 
+the tool."""
+
 import sys, os
 import argparse
 from warnings import warn

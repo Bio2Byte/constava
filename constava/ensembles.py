@@ -1,3 +1,7 @@
+"""constava.ensembles contains classes describing the input data from the 
+conformational ensemble.
+"""
+
 from dataclasses import dataclass
 from typing import List, Generator
 import numpy as np

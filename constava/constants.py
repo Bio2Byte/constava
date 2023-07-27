@@ -1,3 +1,5 @@
+"""constava.constants contains general information for all modules"""
+
 import os
 
 CONSTAVA_SOURCE_DIR = os.path.dirname(os.path.abspath(__file__))

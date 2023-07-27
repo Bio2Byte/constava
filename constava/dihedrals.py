@@ -1,3 +1,6 @@
+"""constava.dihedrals is a stand-alone executable script that extracts the
+phi/psi backbone dihedral angles from a conformational ensmeble. """
+
 import argparse, os, sys
 import csv
 from typing import List, NamedTuple

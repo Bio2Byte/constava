@@ -1,3 +1,6 @@
+"""constava.resultswriter contains classes the write the output to different 
+data formats."""
+
 import abc
 import csv
 import json
