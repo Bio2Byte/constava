@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import List, Generator
 import numpy as np
 
-from .constants import aminoacids3to1
+from ..constants import aminoacids3to1
 
 
 @dataclass

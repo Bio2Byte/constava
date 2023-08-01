@@ -7,7 +7,7 @@ import json
 import os 
 from typing import List
 import numpy as np
-from .results import ConfStateResults, ConfStateResultsEntry
+from ..datautils.results import ConfStateResults, ConfStateResultsEntry
 
 
 class WriterABC(metaclass=abc.ABCMeta):

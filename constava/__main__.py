@@ -5,12 +5,13 @@ import sys, os
 import argparse
 from warnings import warn
 
-from constava.calculator import ConfStateCalculator
 from constava.constants import DEFAULT_KDE_PATH, DEFAULT_TRAINING_DATA_PATH
-from constava.ensemblereader import EnsembleReader
-from constava.methods import ConstavaBootstrap, ConstavaWindow
-from constava.resultswriter import ResultWriter
-from constava.pdfestimators import KDEStatePdf, GridStatePdf
+from constava.calc.calculator import ConfStateCalculator
+from constava.calc.subsampling import SubsamplingBootstrap, SubsamplingWindow
+from constava.calc.pdfestimators import KDEStatePdf, GridStatePdf
+from constava.io.ensemblereader import EnsembleReader
+from constava.io.resultswriter import ResultWriter
+
 
 
 def parse_commandline_arguments(arguments):
@@ -134,9 +135,9 @@ def main():
     # Load the calculation methods
     cscalc = ConfStateCalculator(pdfestimator)
     for window_size in args.window:
-        cscalc.add_method(ConstavaWindow(window_size))
+        cscalc.add_method(SubsamplingWindow(window_size))
     for sample_size in args.bootstrap:
-        cscalc.add_method(ConstavaBootstrap(sample_size, args.bootstrap_samples))
+        cscalc.add_method(SubsamplingBootstrap(sample_size, args.bootstrap_samples, seed=args.seed))
 
     # Do the inference
     results = cscalc.calculate(ensemble)

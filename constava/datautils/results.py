@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import List
 import numpy as np
 from .ensembles import ProteinEnsemble, ResidueEnsemble
-from .methods import ConstavaABC
+from ..calc.subsampling import SubsamplingABC
 
 @dataclass
 class ConfStateResultsEntry:
@@ -24,7 +24,7 @@ class ConfStateResultsEntry:
 
 class ConfStateResults:
     """ Results from ConfStateCalculator for a given ProteinEnsemble and Method """
-    def __init__(self, method: ConstavaABC, protein: ProteinEnsemble, state_labels: List[str], entries: List[ConfStateResultsEntry] = None):
+    def __init__(self, method: SubsamplingABC, protein: ProteinEnsemble, state_labels: List[str], entries: List[ConfStateResultsEntry] = None):
         self.method = method
         self.protein = protein
         self.state_labels = state_labels

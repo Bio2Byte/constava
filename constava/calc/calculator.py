@@ -5,15 +5,15 @@ a protein ensemble
 
 from typing import List
 import tqdm
-from .ensembles import ProteinEnsemble
-from .methods import ConstavaABC
+from .subsampling import SubsamplingABC
 from .pdfestimators import StatePdfABC
-from .results import ConfStateResults, ConfStateResultsEntry
+from ..datautils.ensembles import ProteinEnsemble
+from ..datautils.results import ConfStateResults, ConfStateResultsEntry
 
 
 class ConfStateCalculator:
 
-    def __init__(self, pdfestimator: StatePdfABC, methods: List[ConstavaABC] = None):
+    def __init__(self, pdfestimator: StatePdfABC, methods: List[SubsamplingABC] = None):
         """Initializes the calcualtor class with given conformational state 
         models (pdfestimator) and zero or more subsampling methods.
 
@@ -22,13 +22,13 @@ class ConfStateCalculator:
             pdfestimator : StatePdfABC
                 Probabilistic model of conformational states used for the calculation.
 
-            methods : List[ConstavaABC] = None
+            methods : List[SubsamplingABC] = None
                 (Optional) A list of subsampling methods to use in the calculation.
         """
         self.pdfestimator = pdfestimator
         self.methods = methods or []
 
-    def add_method(self, new_method: ConstavaABC):
+    def add_method(self, new_method: SubsamplingABC):
         """Adds a new subsampling methods to the calculator."""
         self.methods.append(new_method)
 

@@ -4,12 +4,13 @@ import os
 import glob
 from typing import List, Union, Optional, Literal
 
-from constava.calculator import ConfStateCalculator
 from constava.constants import DEFAULT_KDE_PATH, DEFAULT_TRAINING_DATA_PATH
-from constava.ensemblereader import EnsembleReader
-from constava.methods import ConstavaBootstrap, ConstavaWindow
-from constava.resultswriter import ResultWriter
-from constava.pdfestimators import KDEStatePdf, GridStatePdf
+from constava.calc.calculator import ConfStateCalculator
+from constava.calc.subsampling import SubsamplingBootstrap, SubsamplingWindow
+from constava.calc.pdfestimators import KDEStatePdf, GridStatePdf
+from constava.io.ensemblereader import EnsembleReader
+from constava.io.resultswriter import ResultWriter
+
 
 
 class ConStaVa:
@@ -189,11 +190,11 @@ class ConStaVa:
 
 		if self.window is not None:
 			for window_size in self.window:
-				cscalc.add_method(ConstavaWindow(window_size))
+				cscalc.add_method(SubsamplingWindow(window_size))
 
 		if self.bootstrap is not None:
 			for sample_size in self.bootstrap:
-				cscalc.add_method(ConstavaBootstrap(sample_size, self.bootstrap_samples, seed=self.bootstrap_seed))
+				cscalc.add_method(SubsamplingBootstrap(sample_size, self.bootstrap_samples, seed=self.bootstrap_seed))
 
 		# Do the inference
 		self.results = cscalc.calculate(self.ensemble)

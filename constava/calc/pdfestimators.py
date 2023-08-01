@@ -9,7 +9,7 @@ from typing import List, Tuple
 import numpy as np
 from scipy.interpolate import interpn
 from sklearn.neighbors import KernelDensity
-from constava.ensemblereader import check_dihedral_range
+from ..io.ensemblereader import check_dihedral_range
 
 
 class StatePdfABC(metaclass=abc.ABCMeta):

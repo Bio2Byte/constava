@@ -7,7 +7,7 @@ import numpy as np
 from typing import Optional
 
 
-class ConstavaABC(metaclass=abc.ABCMeta):
+class SubsamplingABC(metaclass=abc.ABCMeta):
     """Base class to subsample the logPDF values obtained from the probabilistic 
     conformatinoal state models and calculate the conformational state 
     propensities and conformational state variability.
@@ -98,7 +98,7 @@ class ConstavaABC(metaclass=abc.ABCMeta):
         pass
 
 
-class ConstavaWindow(ConstavaABC):
+class SubsamplingWindow(SubsamplingABC):
     """Class to subsample the logPDF values obtained from the probabilistic 
     conformatinoal state models and calculate the conformational state 
     propensities and conformational state variability. Subsampling is done 
@@ -165,7 +165,7 @@ class ConstavaWindow(ConstavaABC):
         return pdf
 
 
-class ConstavaBootstrap(ConstavaABC):
+class SubsamplingBootstrap(SubsamplingABC):
     """Class to subsample the logPDF values obtained from the probabilistic 
     conformatinoal state models and calculate the conformational state 
     propensities and conformational state variability. Subsampling is done 

@@ -6,7 +6,7 @@ from typing import List
 from warnings import warn
 import numpy as np
 import pandas as pd
-from .ensembles import ProteinEnsemble, ResidueEnsemble
+from ..datautils.ensembles import ProteinEnsemble, ResidueEnsemble
 
 
 class UnknownFileStructureError(ValueError):
