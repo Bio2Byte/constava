@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="constava",
-    version="0.1.0b3",
+    version="0.1.0",
     author="Wim Vranken",
     author_email="wim.vranken@vub.be",
     description="This software is used to calculate conformational states probability & conformational state "
@@ -32,9 +32,9 @@ setup(
         "Topic :: Scientific/Engineering :: Physics",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Education",
-        "Development Status :: 4 - Beta"
+        "Development Status :: 5 - Production/Stable"
     ],
-    python_requires=">=3.6",
+    python_requires='>=3.6, <=3.10.*',
     install_requires=[
         "MDAnalysis",
         "numpy",
