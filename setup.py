@@ -34,7 +34,7 @@ setup(
         "Intended Audience :: Education",
         "Development Status :: 5 - Production/Stable"
     ],
-    python_requires='>=3.6, <=3.10.*',
+    python_requires=">=3.6, <=3.10.*",
     install_requires=[
         "MDAnalysis",
         "numpy",
