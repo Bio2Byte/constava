@@ -147,6 +147,7 @@ We recommend installation via PyPI:
     ```
    pip install constava
    ```
+   (Takes about 1 minute)
    
 #### Python execution usage
 
@@ -164,6 +165,10 @@ cons.read_input_files(degrees=True, infile="../md_simulations/1akp/*.xvg")
 cons.calculate_results(window=[1,2,4], bootstrap=[2,3,5,25])
 cons.save_results(output_file='the_results.csv')
 ```
+This protein, with 114 residues runs in less than 2 minutes.
+
+The original MD ensembles from the manuscript can be found in 
+[https://doi.org/10.5281/zenodo.8160755](https://doi.org/10.5281/zenodo.8160755).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
