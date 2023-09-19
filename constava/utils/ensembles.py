@@ -6,7 +6,12 @@ from dataclasses import dataclass
 from typing import List, Generator
 import numpy as np
 
-from ..constants import aminoacids3to1
+from .constants import aminoacids3to1
+
+
+class EnsembleMismatchError(ValueError):
+    """Error raised when ResidueEnsembles from different ProteinEnsembles are mixed"""
+    pass
 
 
 @dataclass
@@ -27,7 +32,7 @@ class ResidueEnsemble:
     restype: str = ""
     respos: int = None
     phipsi: np.ndarray = None
-    proteinensemble = None
+    protein = None
 
     @property
     def restype1(self):
@@ -109,7 +114,7 @@ class ProteinEnsemble:
         """ Adds a new residue to the ensemble, and sorts the residue list 
         according to their indices """
         for res in new_residues:
-            res.owner = self
+            res.protein = self
             self._residues.append(res)
         self._residues.sort()
         # self.__dict__.pop('sequence', None)

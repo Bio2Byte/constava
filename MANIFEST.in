@@ -1,1 +1,1 @@
-recursive-include constava/data *.json
+include constava/data/*

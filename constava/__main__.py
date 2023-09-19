@@ -1,150 +1,297 @@
 """constava.__main__ is the executable for the command line functionality of 
 the tool."""
-
-import sys, os
+import os, sys
 import argparse
-from warnings import warn
-
-from constava.constants import DEFAULT_KDE_PATH, DEFAULT_TRAINING_DATA_PATH
-from constava.calc.calculator import ConfStateCalculator
-from constava.calc.subsampling import SubsamplingBootstrap, SubsamplingWindow
-from constava.calc.pdfestimators import KDEStatePdf, GridStatePdf
-from constava.io.ensemblereader import EnsembleReader
-from constava.io.resultswriter import ResultWriter
+import textwrap as tw
+from constava import Constava, ConstavaParameters, __version__
+from constava.utils.dihedrals import calculate_dihedrals
 
 
+def parse_parameters(cmdline_arguments):
+    """Parse command line arguments and return them as ConstavaParameters object
+    """
+    parser = argparse.ArgumentParser(description=tw.dedent(
+        """\
+        Constava analyzes conformational ensembles calculating conformational state 
+        propensities and conformational state variability. The conformational state 
+        propensities indicate the likelihood of a residue residing in a given 
+        conformational state, while the conformational state variability is a measure 
+        of the residues ability to transiton between conformational states.
+        
+        Each conformational state is a statistical model of based on the backbone 
+        dihedrals (phi, psi). The default models were derived from an analysis of NMR
+        ensembles and chemical shifts. To analyze a conformational ensemble, the phi- 
+        and psi-angles for each conformational state in the ensemble need to be 
+        provided. 
+        
+        The `constava dihedrals` submodule provides a simple way to extract backbone 
+        dihedral angles from MD simulations or PDB ensembles. For more information
+        run: `constava dihedrals -h`. Alternatively, the backbone dihedrals may be
+        extracted with GROMACS' `gmx chi` module.
 
-def parse_commandline_arguments(arguments):
+        The `constava analyze` submodule analyzes the provided backbone dihedral angles
+        and infers the propensities for each residue to reside in a given 
+        conformational state. For more information run: `constava analyze -h`.
 
-    # Required for the description to consider return characters \n
-    class CustomFormatter(argparse.RawDescriptionHelpFormatter, argparse.ArgumentDefaultsHelpFormatter):
-        pass
-
-    parser = argparse.ArgumentParser(description=(
-            "This software is used to calculate Conformational State Variability "
-            "(ConStaVa) from a protein structure ensemble. This is done by "
-            "calculating the propensities for each conformational state for each "
-            "residue in a protein ensemble. Then, ConStaVa is calculated from the "
-            "change among Conformational States, inferred from trained Kernel "
-            "Density Estimators (KDEs).\n\nBy default, this code retrains the "
-            "Conformational States KDEs with the provided data set, as described in "
-            "the associated publication. This will generate KDEs that are compatible "
-            "with your current SciKit-learn version, and can be stored with the "
-            "--kde-dump flag, to be later loaded with the --kde flag.\n\n"
-            "Alternatively, the same pre-trained KDEs used for the publication can "
-            "be used with the flag --use-publication-kdes. Due to SciKit-learn "
-            "limitations, this flag must only be used with SciKit-learn version "
-            "x.x.xx. If the  user wishes to train KDEs with a different set of "
-            "dihedrals, this can be indicated with the flag --training-data. This "
-            "must be provided in a json file, with the name of the conformational "
-            "states as keys and a list of lists [[phi, psi], [phi, psi], ...] as values."),
-        formatter_class=CustomFormatter)
-
-    io_group = parser.add_argument_group("Input/Output Options")
-    io_group.add_argument("-i", "--input-file", nargs="+", type=str, help="Input file with dihedral angles")
-    io_group.add_argument("-o", "--output-file", type=str, help="Output file")
-    io_group.add_argument("--input-format", choices=["auto", "xvg", "csv"], default="auto",
-                        help="Format of input file")
-    io_group.add_argument("--input-degrees", action="store_true",
-                        help="Add this flag if input is provided in degrees (instead of radians)")
-    io_group.add_argument("--output-format", choices=["auto", "csv", "json"], default="auto",
-                        help="Format of output file")
-
-    kde_group = parser.add_argument_group("KDE options")
-    kde_group.add_argument("-k", "--kdes", metavar="<file.pkl>", help="Load KDEs from the given file")
-    kde_group.add_argument("-d", "--kde-from-data", metavar="<data.json>", help=(
-        "Fir KDEs from the given data. The data is provided in a json file, with "
-        "the name of the conformational states as keys and a list of lists [[phi, "
-        "psi], [phi, psi], ...] as values"))
-    kde_group.add_argument("--kde-from-degrees", action="store_true", help=(
-        "Add this flag if the data to fit the KDEs is provided in degrees (instead of radians)"))
-    kde_group.add_argument("--dump-kdes", metavar="<file.pkl>", type=str, help=(
-        "Dump the fitted KDEs as a pickled file, so that they can be reused "
-        "later on using the --kdes flag."))
-    kde_group.add_argument("--kde-bandwidth", metavar="<float>", type=float, default=.13)
-    #kde_group.add_argument("--use-publication-kdes", type=str,
-    #                       help="Load KDEs used in publication. This requires sklearn version x.x.xx")
-
-    misc_group = parser.add_argument_group("Miscellaneous Options")
-    misc_group.add_argument("--window", metavar="<int>", type=int, nargs='+', help="Do inference using a moving reading-frame of <int> consecutive samples.")
-    misc_group.add_argument("--bootstrap", metavar="<int>", type=int, nargs='+', help="Do inference using <Int> samples obtained through bootstrapping. (By default a run with 3 and 25 is performed.)")
-    misc_group.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help="If bootstrap, sample <Int> times from the input data (default: 500)")
-    misc_group.add_argument("--seed", metavar="<int>", type=int, default=None, required=False, help="Set random seed for bootstrap sampling (default: None)")
-    misc_group.add_argument("--quick", action="store_true", help="Use grid-interpolation instead of KDEs")
-    misc_group.add_argument("--precision", type=int, default=4, help='Sets de number of decimals in the output files. By default, 4 decimal.')
-
-    # Do actual parameter parsing
-    args = parser.parse_args(arguments)
-
-    # Some validity checks for Input/output
-    if args.input_file is not None and args.output_file is None:
-        raise argparse.ArgumentError("Missing argument: --output-file")
-    if args.input_file is None and args.output_file is not None:
-        raise argparse.ArgumentError("Missing argument: --input-file")
-    if args.input_file is None and args.output_file is None and args.kde_from_data is None:
-        raise argparse.ArgumentError((
-            "Missing argument: You need to provide either input and output file "
-            "or kde-training-data"))
+        The `constava fit-model` can be used to train a custom probabilistic model of
+        confromational states.  The default models were derived from an analysis of NMR
+        ensembles and chemical shifts; they cover six conformational states:
+            * Core Helix - Exclusively alpha-helical, low backbone dynamics
+            * Surrounding Helix - Mostly alpha-helical, high backbone dynamics
+            * Core Sheet - Exclusively beta-sheet, low backbone dynamics
+            * Surrounding Sheet - Mostly extended conformation, high backbone dynamics
+            * Turn - Mostly turn, high backbone dynamics
+            * Other - Mostly coil, high backbone dynamics"""),
+        formatter_class=argparse.RawTextHelpFormatter, add_help=False)
     
-    # Some validity checks for KDEs
-    if args.kdes is not None and args.kde_from_data is not None:
-        warn("Loading KDEs from provided file. Training data will be ignored")
-    if args.kdes is None and args.kde_from_data is None:
-        if os.path.isfile(DEFAULT_KDE_PATH):
-            args.kdes = DEFAULT_KDE_PATH
-        else:
-            args.kde_from_data = DEFAULT_TRAINING_DATA_PATH
-            args.dump_kdes = DEFAULT_KDE_PATH
+    # General flags for the main software
+    genOpt = parser.add_argument_group("Generic options")
+    genOpt.add_argument("-h", "--help", action="help", help=tw.dedent(
+        """\
+        Show this help message and exit. For detailled 
+        information on the subcommands, run: 
+        `%(prog)s SUBCOMMAND -h`"""))
+    genOpt.add_argument("--version", action="version", version=f"%(prog)s {__version__}", 
+        help="Show the program's version number and exit")
 
-    # Some validity checks for Misc
-    if args.bootstrap is None and args.window is None:
-        args.bootstrap = [3, 25]
-    elif args.bootstrap is None and args.window is not None:
-        args.bootstrap = []
-    if args.window is None:
-        args.window = []
+    subparsers = parser.add_subparsers(title="Subcommands", 
+        dest="subcommand", required=True, help=tw.dedent(
+        """\
+        fit-model
+            Fit a custom conformational state model
+        analyze
+            Analyze a conformational ensemble using a 
+            conformational state model
+        dihedrals
+            Obtain the phi/psi backbone dihedral angles from a MD 
+            simulation"""))
 
-    return args
+    # ======================
+    #  Subparser: fit-model
+    # ======================
+    parser_fit_model = subparsers.add_parser("fit-model", description=tw.dedent(
+        """\
+        The `constava fit-model` submodule is used to generate the probabilistic
+        conformational state models used in the analysis. By default, when running
+        `constava analyze` these models are generated on-the-fly. In selected cases 
+        generating a model beforehand and loading it can be useful, though.
 
+        We provide two model types. kde-Models are the default. They are fast to fit
+        but may be slow in the inference in large conformational ensembles (e.g., 
+        long-timescale MD simulations). The idea of grid-Models is, to replace
+        the continuous probability density function of the kde-Model by a fixed set
+        of grid-points. The PDF for any sample is then estimated by linear 
+        interpolation between the nearest grid points. This is slightly less
+        accurate then the kde-Model but speeds up inference significantly."""),
+        formatter_class=argparse.RawTextHelpFormatter)
+    
+    fitIO = parser_fit_model.add_argument_group("Input and output options")
+    fitIO.add_argument("-i", "--input", type=str, metavar="<file.json>", help=tw.dedent(
+        """\
+        The data to which the new conformational state models will
+        be fitted. It should be provided as a JSON file. The 
+        top-most key should indicate the names of the 
+        conformational states. On the level below, lists of phi-/
+        psi pairs for each stat should be provided. If not provided 
+        the default data from the publication will be used."""))
+    fitIO.add_argument("-o", "--output", type=str, metavar="<file.pkl>", required=True, help=tw.dedent(
+        """\
+        Write the generated model to a pickled file, that can be
+        loaded gain using `constava analyze --load-model`"""))
+    
+    fitMdl = parser_fit_model.add_argument_group("Conformational state model options")
+    fitMdl.add_argument("--model-type", choices=["kde", "grid"], default="kde", help=tw.dedent(
+        """\
+        The probabilistic conformational state model used. The 
+        default is `kde`. The alternative `grid` runs significantly
+        faster while slightly sacrificing accuracy: {'kde', 'grid'}
+        (default: 'kde')"""))
+    fitMdl.add_argument("--kde-bandwidth", type=float, metavar="<float>", default=.13, help=tw.dedent(
+        """\
+        This flag controls the bandwidth of the Gaussian kernel 
+        density estimator. (default: 0.13)"""))
+    fitMdl.add_argument("--grid-points", type=int, metavar="<int>", default=10_000, help=tw.dedent(
+        """\
+        This flag controls how many grid points are used to 
+        describe the probability density function. Only applies if
+        `--model-type` is set to `grid`. (default: 10000)"""))
+    
+    fitMisc = parser_fit_model.add_argument_group("Miscellaneous options")
+    fitMisc.add_argument("--degrees", action="store_true", help=tw.dedent(
+        """\
+        Set this flag, if dihedrals in `model-data` are in degrees 
+        instead of radians."""))
+    fitMisc.add_argument("-v", "--verbose", action="count", default=0, help=tw.dedent(
+        """\
+        Set verbosity level of screen output. Flag can be given 
+        multiple times (up to 2) to gradually increase output to 
+        debugging mode."""))
+    
+    # ====================
+    #  Subparser: analyze
+    # ====================
+    parser_analyze = subparsers.add_parser("analyze", description=tw.dedent(
+        """\
+        The `constava analyze` submodule analyzes the provided backbone dihedral angles
+        and infers the propensities for each residue to reside in a given 
+        conformational state. 
+
+        Each conformational state is a statistical model of based on the backbone 
+        dihedrals (phi, psi). The default models were derived from an analysis of NMR
+        ensembles and chemical shifts. To analyze a conformational ensemble, the phi- 
+        and psi-angles for each conformational state in the ensemble need to be 
+        provided. 
+        
+        As input data the backbone dihedral angles extracted from the conformational 
+        ensemble need to be provided. Those can be generated using the 
+        `constava dihedrals` submodule (`--input-format csv`) or GROMACS'
+        `gmx chi` module (`--input-format xvg`)."""),
+        formatter_class=argparse.RawTextHelpFormatter)
+    
+    anaIO = parser_analyze.add_argument_group("Input & output options")
+    anaIO.add_argument("-i", "--input", nargs="+", type=str, metavar="<file.csv>", 
+        help="Input file(s) that contain the dihedral angles.")
+    anaIO.add_argument("--input-format", choices=["auto", "xvg", "csv"], default="auto", 
+        help="Format of the input file: {'auto', 'csv', 'xvg'}")
+    anaIO.add_argument("-o", "--output", type=str, metavar="<file.csv>",
+        help="The file to write the results to.")
+    anaIO.add_argument("--output-format", choices=["auto", "csv", "json", "tsv"], default="auto",
+        help="Format of output file: {'csv', 'json', 'tsv'}. (default: 'auto')")
+
+    anaMdl = parser_analyze.add_argument_group("Conformational state model options")
+    anaMdl.add_argument("-m", "--load-model", type=str, metavar="<file.pkl>", help=tw.dedent(
+        """\
+        Load a conformational state model from the given pickled 
+        file. If not provided, the default model will be used."""))
+    
+    anaSmpl = parser_analyze.add_argument_group("Subsampling options")
+    anaSmpl.add_argument("--window", metavar="<int>", type=int, nargs='+', help=tw.dedent(
+        """\
+        Do inference using a moving reading-frame. Each reading 
+        frame consists of <int> consecutive samples. Multiple 
+        values can be provided."""))
+    anaSmpl.add_argument("--window-series", metavar="<int>", type=int, nargs='+', help=tw.dedent(
+        """\
+        Do inference using a moving reading-frame. Each reading 
+        frame consists of <int> consecutive samples. Return the 
+        results for every window rather than the average. This can
+        result in very large output files. Multiple values can be 
+        provided."""))
+    anaSmpl.add_argument("--bootstrap", metavar="<int>", type=int, nargs='+',  help=tw.dedent(
+        """\
+        Do inference using <Int> samples obtained through 
+        bootstrapping. Multiple values can be provided."""))
+    anaSmpl.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help=tw.dedent(
+        """\
+        When bootstrapping, sample <Int> times from the input data.
+        (default: 500)"""))
+    
+    anaMisc = parser_analyze.add_argument_group("Miscellaneous options")
+    anaMisc.add_argument("--degrees", action="store_true", help=tw.dedent(
+        """\
+        Set this flag, if dihedrals in the input files are in 
+        degrees."""))
+    anaMisc.add_argument("--precision", type=int, default=4, 
+        help="Sets the number of decimals in the output files.")
+    anaMisc.add_argument("--seed", metavar="<int>", type=int, default=None, 
+        required=False, help="Set random seed for bootstrap sampling")
+    anaMisc.add_argument("-v", "--verbose", action="count", default=0, help=tw.dedent(
+        """\
+        Set verbosity level of screen output. Flag can be given 
+        multiple times (up to 2) to gradually increase output to 
+        debugging mode."""))
+
+    # =====================
+    # Subparser: dihedrals
+    # =====================
+    parser_dihedrals = subparsers.add_parser("dihedrals", description=tw.dedent(
+        """\
+        The `constava dihedrals` submodule is used to extract the backbone dihedrals
+        needed for the analysis from confromational ensembles. By default the results
+        are written out in radians as this is the preferred format for 
+        `constava analyze`.
+        
+        Note: For the first and last residue in a protein only one backbone dihedral
+        can be extracted. Thus, those residues are omitted by default."""),
+        formatter_class=argparse.RawTextHelpFormatter)
+
+    dihIO = parser_dihedrals.add_argument_group("Input & output options")
+    dihIO.add_argument("-s", "--structure", metavar="<file.pdb>", 
+        help="Structure file with atomic information: [pdb, gro, tpr]")
+    dihIO.add_argument("-f", "--trajectory", nargs="+", metavar="<file.xtc>", 
+        help="Trajectory file with coordinates: [pdb, gro, trr, xtc, crd, nc]")
+    dihIO.add_argument("-o", "--output", default=None, required=False,
+        help="CSV file to write dihedral information to. (default: dihedrals.csv)")
+    
+    dihMisc = parser_dihedrals.add_argument_group("Input & output options")
+    dihMisc.add_argument("--selection", default="protein",
+        help="Selection for the dihedral calculation. (default: 'protein')")
+    dihMisc.add_argument("--precision", default=5, type=int,
+        help="Defines the number of decimals written for the dihedrals. (default: 5)")
+    dihMisc.add_argument("--degrees", action="store_true",
+        help="If set results are written in degrees instead of radians.")
+    dihMisc.add_argument("-O", "--overwrite", action="store_true",
+        help="If set any previously generated output will be overwritten.")
+
+    # Parse command line arguments
+    return parser.parse_args(cmdline_arguments)
+
+def run_fit_model(args):
+    """Run fit-model subcommand when invoked from command line"""
+    # Initialze and run Constava
+    cva = Constava(ConstavaParameters(verbose=args.verbose))
+    csmodel = cva.fit_csmodel(
+        model_type = args.model_type,
+        model_data = args.input,
+        kde_bandwidth = args.kde_bandwidth,
+        grid_points = args.grid_points,
+        model_data_degrees = args.degrees)
+    # Write the fitted model out as a pickle
+    csmodel.dump_pickle(args.output)
+
+def run_analyze(args):
+    """Run analyze subcommand when invoked from command line."""
+    # Convert command line arguments to ConstavaParameters
+    params = ConstavaParameters(verbose=args.verbose)
+    params.input_files = args.input
+    params.input_format = args.input_format
+    params.output_file = args.output
+    params.output_format = args.output_format
+    params.model_load = args.load_model
+    params.window = args.window
+    params.window_series = args.window_series
+    params.bootstrap = args.bootstrap
+    params.bootstrap_samples = args.bootstrap_samples
+    params.input_degrees = args.degrees
+    params.precision = args.precision
+    params.seed = args.seed
+    # Initialze and run Constava
+    cva = Constava(params)
+    cva.run()
+
+def run_dihedrals(args):
+    """Run analyze subcommand when invoked from command line."""
+    # Set output to default value if needed
+    args.output = args.output or "dihedrals.csv"
+    if not args.overwrite and os.path.exists(args.output):
+        raise FileExistsError(f"Cannot overwrite existing file: {args.output}")
+    # Calculate dihedrals
+    dihedrals = calculate_dihedrals(args.structure, args.trajectory, 
+                                    args.selection, args.degrees)
+    # Write results
+    float2str = f"%.{args.precision}f" # Definition of float format in output
+    dihedrals.to_csv(args.output, header=True, index=False, float_format=float2str)
 
 def main():
-    args = parse_commandline_arguments(sys.argv[1:])
-    #print(args)
+    """main function executed when running script in command line mode"""
+    # Parse command line parameters
+    args = parse_parameters(sys.argv[1:])
+    if args.subcommand == "fit-model":
+        run_fit_model(args)
+    elif args.subcommand == "analyze":
+        run_analyze(args)
+    elif args.subcommand == "dihedrals":
+        run_dihedrals(args)
 
-    # Read input files
-    reader = EnsembleReader(filetype_str = args.input_format, 
-                            degrees2radians = args.input_degrees)
-    ensemble = reader.readFiles(*args.input_file)
-
-    # Load/Fit KDEs
-    PDFEstimator = GridStatePdf if  args.quick else KDEStatePdf
-    if args.kdes is not None:
-        pdfestimator = PDFEstimator.from_pickle(args.kdes)
-    elif args.kde_from_data is not None:
-        pdfestimator = PDFEstimator.from_fitting(
-            args.kde_from_data,
-            bandwidth = args.kde_bandwidth,
-            degrees2radians = args.kde_from_degrees)
-    else:
-        # TODO raise no KDE Exception
-        pass
-    # IF dump_kdes, THEN save the KDEs
-    if args.dump_kdes is not None:
-        pdfestimator.dump_pickle(args.dump_kdes)
-
-    # Load the calculation methods
-    cscalc = ConfStateCalculator(pdfestimator)
-    for window_size in args.window:
-        cscalc.add_method(SubsamplingWindow(window_size))
-    for sample_size in args.bootstrap:
-        cscalc.add_method(SubsamplingBootstrap(sample_size, args.bootstrap_samples, seed=args.seed))
-
-    # Do the inference
-    results = cscalc.calculate(ensemble)
-
-    # Write output
-    writer = ResultWriter(args.output_format, args.precision)
-    writer.writeToFile(results, args.output_file)
-    
 if __name__ == "__main__":
     sys.exit(main())

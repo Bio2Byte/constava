@@ -6,10 +6,13 @@ import abc
 import numpy as np
 from typing import Optional
 
+class SubsamplingMethodError(ValueError):
+    """Raised when there are no subsampling methods passed to the calculator"""
+    pass
 
 class SubsamplingABC(metaclass=abc.ABCMeta):
     """Base class to subsample the logPDF values obtained from the probabilistic 
-    conformatinoal state models and calculate the conformational state 
+    conformational state models and calculate the conformational state 
     propensities and conformational state variability.
     
     Methods:
@@ -64,7 +67,7 @@ class SubsamplingABC(metaclass=abc.ABCMeta):
             state_likelihoods : Array[M,N]
                 Likelihoods for each of the M states along N samples.
         
-        Retruns:
+        Returns:
         --------
             state_var : float
                 Conformational state variability
@@ -100,7 +103,7 @@ class SubsamplingABC(metaclass=abc.ABCMeta):
 
 class SubsamplingWindow(SubsamplingABC):
     """Class to subsample the logPDF values obtained from the probabilistic 
-    conformatinoal state models and calculate the conformational state 
+    conformational state models and calculate the conformational state 
     propensities and conformational state variability. Subsampling is done 
     using a sliding window.
 
@@ -137,7 +140,7 @@ class SubsamplingWindow(SubsamplingABC):
 
     def getShortName(self) -> str:
         """Name of the method for reference in the output."""
-        return f"window({self.window_size:d})"
+        return f"window/{self.window_size:d}/"
 
     def _subsampling(self, logpdf):
         """Subsampling from the distribution of logPDF using a sliding window of 
@@ -167,7 +170,7 @@ class SubsamplingWindow(SubsamplingABC):
 
 class SubsamplingBootstrap(SubsamplingABC):
     """Class to subsample the logPDF values obtained from the probabilistic 
-    conformatinoal state models and calculate the conformational state 
+    conformational state models and calculate the conformational state 
     propensities and conformational state variability. Subsampling is done 
     using bootstrapping.
 
@@ -214,7 +217,8 @@ class SubsamplingBootstrap(SubsamplingABC):
 
     def getShortName(self) -> str:
         """Name of the method for reference in the output."""
-        return f"bootstrapping({self.sample_size:d},{self.n_samples:d})"
+        return "bootstrap/{0:d}/{1:d}/{2}/".format(
+            self.sample_size, self.n_samples, self.seed or "")
 
     def _subsampling(self, logpdf):
         """Subsampling from the distribution of logPDF using bootstrapping. 
@@ -238,8 +242,8 @@ class SubsamplingBootstrap(SubsamplingABC):
         # Randomly select the <n_samples> samples by bootstrapping, with each
         # sample containing exactly <sample_size> measurements from the original
         # distribution. -> Array[n_states, n_samples, sample_size]
-        np.random.seed(self.seed)
-        samples = np.random.randint(n_measurements, size=self.sample_size*self.n_samples)
+        rng = np.random.default_rng(self.seed)
+        samples = rng.integers(n_measurements, size=self.sample_size*self.n_samples)
         logpdf = np.reshape(
             logpdf[:,samples], (n_states, self.n_samples, self.sample_size), 
             order="C")
@@ -250,3 +254,57 @@ class SubsamplingBootstrap(SubsamplingABC):
         pdf = np.exp(logpdf)
         pdf /= np.sum(pdf, axis=0)
         return pdf
+
+
+class SubsamplingWindowSeries(SubsamplingWindow):
+    """Class to subsample the logPDF values obtained from the probabilistic 
+    conformational state models and calculate the conformational state 
+    propensities and conformational state variability. Subsampling is done 
+    using a sliding window. For each window the results are returned.
+
+    Attributes:
+    -----------
+        window_size : int
+            Size of the sliding window used in subsampling.
+    
+    Methods:
+    --------
+        calculate(state_logpdfs)
+            Calculates the coformational state likelihoods and conformational
+            state variablility.
+        calculateStatePropensities(state_likelihoods)
+            Calculates the average conformational state likelihood.
+        calculateStateVariability(state_likelihoods)
+            Calculates the  conformational state variability.
+        getShortName()
+            Name of the method for reference in the output.
+        _subsampling(state_logpdfs)
+            Subsamples from the distribution of original data points.
+    """
+
+    def getShortName(self) -> str:
+        """Name of the method for reference in the output."""
+        return f"window_series/{self.window_size:d}/"
+    
+    def calculateStatePropensities(self, state_likelihoods):
+        """Calculates the conformational state likelihoods for the given sample."""
+        return state_likelihoods
+
+    def calculateStateVariability(self, state_likelihoods):
+        """Calculates distance of the conformational states of each sample to
+        the average conformational state. 
+
+        Parameters:
+        -----------
+            state_likelihoods : Array[M,N]
+                Likelihoods for each of the M states along N samples.
+        
+        Returns:
+        --------
+            state_var : Array[N]
+                Conformational state distances from the average
+        """
+        mean_likelihoods = np.mean(state_likelihoods, axis=1)
+        squard_dev = np.sum((state_likelihoods.T - mean_likelihoods) ** 2, axis=1)
+        state_var = np.sqrt(squard_dev)
+        return state_var

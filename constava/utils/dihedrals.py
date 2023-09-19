@@ -9,7 +9,6 @@ from MDAnalysis.analysis.dihedrals import Ramachandran
 import numpy as np
 import pandas as pd
 
-
 def parse_arguments(cmdline_arguments: List[str]) -> NamedTuple:
     """Parses the command line arguments and does some minor sanity checking.
     
@@ -29,19 +28,19 @@ def parse_arguments(cmdline_arguments: List[str]) -> NamedTuple:
         help="Structure file with atomic information: [pdb, gro, tpr]")
     parser.add_argument("-f", "--trajectory", nargs="+", 
         help="Trajectory file with coordinates: [pdb, gro, trr, xtc, crd, nc]")
-    parser.add_argument("-o", "--outfile", default=None, required=False,
-        help="(Optional) CSV file to write dihedral information to. Default: dihedrals.csv")
+    parser.add_argument("-o", "--output", default=None, required=False,
+        help="(Optional) CSV file to write dihedral information to. (default: dihedrals.csv)")
     parser.add_argument("--selection", default="protein",
-        help="(Optional) Selection for the dihedral calculation. Default: 'protein'")
+        help="(Optional) Selection for the dihedral calculation. (default: 'protein')")
     parser.add_argument("--precision", default=5, type=int,
-        help="(Optional) Defines the number of decimals written for the dihedrals. Default: 5")
+        help="(Optional) Defines the number of decimals written for the dihedrals. (default: 5)")
     parser.add_argument("--degrees", action="store_true",
-        help="Results are written in degrees instead of radians. Default: radians")
+        help="(Optional) Results are written in degrees instead of radians. (default: radians)")
     args = parser.parse_args(cmdline_arguments)
 
-    if args.outfile is None:
-        args.outfile = "dihedrals.csv"
-        if os.path.exists(args.outfile):
+    if args.output is None:
+        args.output = "dihedrals.csv"
+        if os.path.exists(args.output):
             raise FileExistsError((
                 "Output file `{args.outfile}` exists already. Please, specify "
                 "--outfile explicitely to overwrite or choose a different file name."
@@ -106,7 +105,7 @@ def main(cmdline_arguments: List[str]):
         args.structure, args.trajectory, args.selection, args.degrees)
     # Write results
     float2str = f"%.{args.precision}f" # Definition of float format in output
-    dihedrals.to_csv(args.outfile, header=True, index=False, float_format=float2str)
+    dihedrals.to_csv(args.output, header=True, index=False, float_format=float2str)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
