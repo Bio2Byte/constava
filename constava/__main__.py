@@ -191,7 +191,7 @@ def parse_parameters(cmdline_arguments):
         """\
         Set this flag, if dihedrals in the input files are in 
         degrees."""))
-    anaMisc.add_argument("--precision", type=int, default=4, 
+    anaMisc.add_argument("--precision", metavar="<int>", type=int, default=4, 
         help="Sets the number of decimals in the output files.")
     anaMisc.add_argument("--seed", metavar="<int>", type=int, default=None, 
         required=False, help="Set random seed for bootstrap sampling")

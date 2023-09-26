@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="constava",
-    version="1.0.0b3",
+    version="1.0.0b4",
     author="Wim Vranken",
     author_email="wim.vranken@vub.be",
     description="This software is used to calculate conformational states probability & conformational state "

@@ -6,7 +6,7 @@ import unittest
 from constava import Constava
 from constava.utils.constants import CONSTAVA_DATA_DIR
 from constava.calc.csmodels import ConfStateModelLoadingError, ConfStateModelKDE, ConfStateModelGrid
-from constava.wrapper.logging import logging
+from constava.utils.logging import logging
 
 logger = logging.getLogger("Constava")
 
@@ -55,10 +55,6 @@ class TestWrapper(unittest.TestCase):
     def test_csmodel_loading_kde(self):
         logger.warning(f"TEST #{self.get_test_count()}: Testing loading procedures for 'kde' models...")
         cva = Constava(verbose=1)
-        # It should fail to load a 'grid' model as kde
-        # with self.assertRaises(ConfStateModelLoadingError):
-        #     c.initialize_calculator(model_type = "kde",
-        #                             load_model = self.grid_model)
         # Load the KDE model
         csmodel0 = cva.load_csmodel(pickled_csmodel = self.kde_model)
         self.assertIsInstance(csmodel0, ConfStateModelKDE, "Failed to load conformational state model.")
@@ -78,10 +74,6 @@ class TestWrapper(unittest.TestCase):
     def test_csmodel_loading_grid(self):
         logger.warning(f"TEST #{self.get_test_count()}: Testing loading procedures for 'grid' models...")
         cva = Constava(verbose=1)
-        # # It should fail to load a 'grid' model as kde
-        # with self.assertRaises(ConfStateModelLoadingError):
-        #     c.initialize_calculator(model_type = "grid",
-        #                             load_model = self.kde_model)
         # Load the KDE model
         cva.load_csmodel(pickled_csmodel = self.grid_model)
         csmodel0, cshash0 = cva._csmodel, cva._cshash
@@ -111,7 +103,7 @@ class TestWrapper(unittest.TestCase):
 
     def test_inference_grid(self):
         logger.warning(f"TEST #{self.get_test_count()}: Testing inference for 'grid' models...")
-        input_files = [f"{self.tmpdir}/csv/dihedrals.csv"]
+        input_files = f"{self.tmpdir}/csv/dihedrals.csv"
         expected_result = f"{self.tmpdir}/csv/result_grid.csv"
         output_file  = tempfile.NamedTemporaryFile(prefix="grid.", suffix=".csv", dir=self.tmpdir)
         c = Constava(

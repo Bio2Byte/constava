@@ -2,7 +2,7 @@ import os
 from typing import List
 
 from ..utils.constants import DEFAULT_TRAINING_DATA_PATH
-from .logging import logging
+from ..utils.logging import logging
 from .params import ConstavaParameters
 from ..io import ResultsWriter, EnsembleReader
 from ..calc.calculator import ConfStateCalculator

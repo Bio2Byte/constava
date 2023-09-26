@@ -1,8 +1,34 @@
 from dataclasses import dataclass, field
-from typing import List, ClassVar
-from .logging import logging
+import typing
+from ..utils.logging import logging
 
 logger = logging.getLogger("Constava")
+
+def set_logger_level(func):
+    """Set logger.level while modifying verbose-attribute"""
+    def _inner_(self, __attr, __value):
+        rvalue = func(self, __attr, __value)
+        if __attr == "verbose":
+            if __value == 0:
+                logger.setLevel(logging.WARNING)
+            elif __value == 1:
+                logger.setLevel(logging.INFO)
+            else:
+                logger.setLevel(logging.DEBUG)
+        return rvalue
+    return _inner_
+
+def set_single_as_list(func):
+    """Allows list-attributes (e.g., window) to be set with a single value"""
+    def _inner_(self, __attr, __value):
+        dtype = typing.get_type_hints(self).get(__attr, None)
+        if typing.get_origin(dtype) is list:
+            if __value is None:
+                __value = []
+            elif not isinstance(__value, typing.Iterable) or isinstance(__value, str):
+                __value = [__value]
+        return func(self, __attr, __value)
+    return _inner_
 
 
 @dataclass
@@ -11,7 +37,7 @@ class ConstavaParameters:
     
     Parameters:
     -----------
-        input_files : List[str]
+        input_files : List[str] or str
             Input file(s) that contain the dihedral angles.
         input_format : str
             Format of the input file: {'auto', 'csv', 'xvg'}
@@ -32,14 +58,14 @@ class ConstavaParameters:
             Write the generated model to a pickled file, that can be loaded 
             again using `model_load`.
 
-        window : List[int]
+        window : List[int] or int
             Do inference using a moving reading-frame of <int> consecutive samples.
             Multiple values can be given as a list.
-        window_series : List[int]
+        window_series : List[int] or int
             Do inference using a moving reading-frame of <int> consecutive samples.
             Return the results for every window rather than the average. Multiple 
             values can be given as a list.
-        bootstrap : List[int]
+        bootstrap : List[int] or int
             Do inference using <Int> samples obtained through bootstrapping.
             Multiple values can be given as a list.
         bootstrap_samples : int
@@ -60,7 +86,7 @@ class ConstavaParameters:
             Set the random seed especially for bootstrapping.
     """
     # Input/Output Options
-    input_files : List[str] = None
+    input_files : typing.List[str] = field(default_factory=list)
     input_format : str = "auto"
     output_file : str = None
     output_format : str = "auto"
@@ -72,9 +98,9 @@ class ConstavaParameters:
     model_dump : str = None
 
     # Subsampling Options
-    window : List[int] = field(default_factory=list)
-    bootstrap : List[int] = field(default_factory=list)
-    window_series : List[int] = field(default_factory=list)
+    window : typing.List[int] = field(default_factory=list)
+    bootstrap : typing.List[int] = field(default_factory=list)
+    window_series : typing.List[int] = field(default_factory=list)
     bootstrap_samples : int = 500
 
     # Miscellaneous Options
@@ -89,22 +115,8 @@ class ConstavaParameters:
     # References to the owning Constava object, not to be set by user
     _constava = None
 
+    @set_logger_level
+    @set_single_as_list
     def __setattr__(self, __attr, __value) -> None:
         """Custom function to set attributes, to catch certain special behaviours"""
-        # Set the actual value
-        super(ConstavaParameters, self).__setattr__(__attr, __value)
-        # Some special behaviours for selected cases
-        # ... "model_load" and "model_data" are mutually exclusive
-        if __attr == "model_load" and __value is not None and self.model_data is not None:
-            logger.warning("`model_load` takes precedence over `model_data`. The latter will be ignored.")
-        # ... "model_load" and "model_data" are mutually exclusive
-        elif __attr == "model_data" and __value is not None and __value and self.model_load is not None:
-            logger.warning("`model_load` is not None. While `model_load` is set `model_data` will be ignored")
-        # ... if verbosity is changed, apply to logger
-        elif __attr == "verbose":
-            if __value == 0:
-                logger.setLevel(logging.WARNING)
-            elif __value == 1:
-                logger.setLevel(logging.INFO)
-            else:
-                logger.setLevel(logging.DEBUG)
+        super().__setattr__(__attr, __value)

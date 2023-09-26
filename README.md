@@ -3,7 +3,7 @@
 <div align="center">
   <a href="bio2byte.be/b2btools" target="_blank" ref="noreferrer noopener">
   <img src="https://pbs.twimg.com/profile_images/1247824923546079232/B9b_Yg7n_400x400.jpg" width="80px"/>
-   </a>
+  </a>
 
   # Constava
 </div>
@@ -25,6 +25,7 @@
     * [Extracting backbone dihedrals as a DataFrame](#extracting-backbone-dihedrals-as-a-dataframe)
     * [Setting parameters and analyzing a conformational ensemble](#setting-parameters-and-analyzing-a-conformational-ensemble)
     * [Generating and loading conformational state models](#generating-and-loading-conformational-state-models)
+    * [Constava-class parameters vs. command line arguments](#constava-class-parameters-vs-command-line-arguments)
 * [License](#license)
 * [Authors](#authors)
 * [Acknowledgements](#acknowledgments)
@@ -393,8 +394,8 @@ output_file = f"./{PDBID}_constava.csv"
 c = Constava(
     input_files = input_files,
     output_file = output_file,
-    window = None,
     bootstrap = [3,5,10,25],
+    input_degrees = True,
     verbose = 2)
 
 # Alter parameters after initialization
@@ -448,6 +449,39 @@ c = Constava(
     verbose = 1)
 c.run()
 ```
+
+[<Go to top>](#constava)
+
+#### Constava-class parameters vs. command line arguments
+
+In the following table, all available parameters of the Python interface (`Constava` 
+class) and their corresponding command line arguments are listed. The defaults for 
+parameters in Python and command line are the same.
+
+| Python parameter | Command line argument | Description |
+|---|---|---|
+| `input_files : List[str] or str` | `constava analyze --input <file> [<file> ...]`  | Input file(s) that contain the dihedral angles. |
+| `input_format : str` | `constava analyze --input-format <enum>` | Format of the input file: `{'auto', 'csv', 'xvg'}` |
+| `output_file : str` | `constava analyze --output <file>` | The file to write the output to. |
+| `output_format : str` | `constava analyze --output-format <enum>` | Format of output file: `{'auto', 'csv', 'json', 'tsv'}` |
+| | | |
+| `model_type : str` | `constava fit-model --model-type <enum>` | The probabilistic conformational state model used. Default is `kde`. The alternative `grid` runs significantly faster while slightly sacrificing accuracy: `{'kde', 'grid'}` |
+| `model_load : str` | `constava analyze --load-model <file>` | Load a conformational state model from the given pickled file. |
+| `model_data : str` | `constava fit-model --input <file>` | Fit conformational state models to data provided in the given file. |
+| `model_dump : str` | `constava fit-model --output <file>` | Write the generated model to a pickled file, that can be loaded again using `model_load`. |
+| | | |
+| `window : List[int] or int` | `constava analyze --window <Int>  [<Int> ...]` | Do inference using a moving reading-frame of <int> consecutive samples. Multiple values can be given as a list. |
+| `window_series : List[int] or int` | `constava analyze --window-series <Int>  [<Int> ...]` | Do inference using a moving reading-frame of <int> consecutive samples. Return the results for every window rather than the average. Multiple values can be given as a list. |
+| `bootstrap : List[int] or int` | `constava analyze --bootstrap <Int> [<Int>  ...]` | Do inference using <Int> samples obtained through bootstrapping. Multiple values can be given as a list. |
+| `bootstrap_samples : int` | `constava analyze --bootstrap-samples <Int> ` | When bootstrapping, sample <Int> times from the input data. |
+| | | |
+| `input_degrees : bool` | `constava analyze --degrees` | Set `True` if input files are in degrees. |
+| `model_data_degrees : bool` | `constava fit-model --degrees` | Set `True` if the data given under `model_data` to is given in degrees. |
+| `precision : int` | `constava analyze --precision <int> ` | Sets the number of decimals in the output files. By default, 4 decimals. |
+| `kde_bandwidth : float` | `constava fit-model --kde-bandwidth <float>` | This controls the bandwidth of the Gaussian kernel density estimator. |
+| `grid_points : int` | `constava analyze --grid-points <int>` | When `model_type` equals 'grid', this controls how many grid points are used to describe the probability density function. |
+| `seed : int` | `constava analyze --seed <int>` | Set the random seed especially for bootstrapping. |
+| `verbose : int` | `constava <...> -v [-v] ` | Set verbosity level of screen output. |
 
 [<Go to top>](#constava)
 
