@@ -81,8 +81,13 @@ class ProteinEnsemble:
     
     @property
     def n_residues(self):
-        """ Returns the number of residues form the first to last residue 
-        this might include gaps (residues without data) """
+        """Returns the number of residues in the ensemble"""
+        return len(self._residues)
+
+    @property
+    def resrange(self):
+        """Returns the range from the first to last residue.
+        This might include gaps (residues without data)"""
         return 1 + self._residues[-1].respos - self._residues[0].respos
 
     @property

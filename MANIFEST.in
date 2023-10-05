@@ -1,1 +1,2 @@
 include constava/data/*
+include requirements.txt

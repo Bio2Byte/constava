@@ -68,6 +68,10 @@ class ConstavaParameters:
         bootstrap : List[int] or int
             Do inference using <Int> samples obtained through bootstrapping.
             Multiple values can be given as a list.
+        bootstrap_series : List[int] or int
+            Do inference using <Int> samples obtained through bootstrapping.
+            Return the results for every subsample rather than the average. Multiple 
+            values can be given as a list.
         bootstrap_samples : int
             When bootstrapping, sample <Int> times from the input data.
 
@@ -101,6 +105,7 @@ class ConstavaParameters:
     window : typing.List[int] = field(default_factory=list)
     bootstrap : typing.List[int] = field(default_factory=list)
     window_series : typing.List[int] = field(default_factory=list)
+    bootstrap_series : typing.List[int] = field(default_factory=list)
     bootstrap_samples : int = 500
 
     # Miscellaneous Options

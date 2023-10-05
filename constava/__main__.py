@@ -48,7 +48,7 @@ def parse_parameters(cmdline_arguments):
     genOpt = parser.add_argument_group("Generic options")
     genOpt.add_argument("-h", "--help", action="help", help=tw.dedent(
         """\
-        Show this help message and exit. For detailled 
+        Show this help message and exit. For detailed 
         information on the subcommands, run: 
         `%(prog)s SUBCOMMAND -h`"""))
     genOpt.add_argument("--version", action="version", version=f"%(prog)s {__version__}", 
@@ -82,7 +82,7 @@ def parse_parameters(cmdline_arguments):
         the continuous probability density function of the kde-Model by a fixed set
         of grid-points. The PDF for any sample is then estimated by linear 
         interpolation between the nearest grid points. This is slightly less
-        accurate then the kde-Model but speeds up inference significantly."""),
+        accurate than the kde-Model but speeds up inference significantly."""),
         formatter_class=argparse.RawTextHelpFormatter)
     
     fitIO = parser_fit_model.add_argument_group("Input and output options")
@@ -181,6 +181,12 @@ def parse_parameters(cmdline_arguments):
         """\
         Do inference using <Int> samples obtained through 
         bootstrapping. Multiple values can be provided."""))
+    anaSmpl.add_argument("--bootstrap-series", metavar="<int>", type=int, nargs='+',  help=tw.dedent(
+        """\
+        Do inference using <Int> samples obtained through 
+        bootstrapping. Return the results for every subsample
+        rather than the average. This can result in very 
+        large output files. Multiple values can be provided."""))
     anaSmpl.add_argument("--bootstrap-samples", metavar="<int>", type=int, default=500, help=tw.dedent(
         """\
         When bootstrapping, sample <Int> times from the input data.
@@ -261,6 +267,7 @@ def run_analyze(args):
     params.window = args.window
     params.window_series = args.window_series
     params.bootstrap = args.bootstrap
+    params.bootstrap_series = args.bootstrap_series
     params.bootstrap_samples = args.bootstrap_samples
     params.input_degrees = args.degrees
     params.precision = args.precision

@@ -99,14 +99,10 @@ directly.
   source constava/bin/activate
   ```
 
-3. Install the project dependencies:
-  ```sh
-  pip install -r requirements.txt
-  ```
-
-  Then, from the package's root directory run:
+3. Build and install the package:
 
   ```sh
+  # In the packages root directory do:
   # Build package from source
   make build
   # Install locally
@@ -122,7 +118,7 @@ from the package's root directory.
 
 The software provides two modes of interaction. Shell user may use the software
 from the command line, while users skilled in Python can import it as a module.
-We provide a couple of usage examples in a [Jupyter notebook]().
+We provide a couple of usage examples in a [Colab notebook](https://colab.research.google.com/github/Bio2Byte/public_notebooks/blob/main/constava_examples.ipynb).
 
 [<Go to top>](#constava)
 
@@ -158,8 +154,7 @@ To extract dihedral angles from a trajectory the `constava dihedrals` submodule
 is used.
 
 ```
-usage: constava dihedrals [-h] [-s <file.pdb>] [-f <file.xtc> [<file.xtc> ...]] [-o OUTPUT] [--selection SELECTION] [--precision PRECISION] [--degrees]
-                          [-O]
+usage: constava dihedrals [-h] [-s <file.pdb>] [-f <file.xtc> [<file.xtc> ...]] [-o OUTPUT] [--selection SELECTION] [--precision PRECISION] [--degrees] [-O]
 
 The `constava dihedrals` submodule is used to extract the backbone dihedrals
 needed for the analysis from confromational ensembles. By default the results
@@ -170,7 +165,7 @@ Note: For the first and last residue in a protein only one backbone dihedral
 can be extracted. Thus, those residues are omitted by default.
 
 optional arguments:
-  -h, --help            show this help message and exit
+  -h, --help            Show this help message and exit
 
 Input & output options:
   -s <file.pdb>, --structure <file.pdb>
@@ -204,27 +199,26 @@ To analyze the backbone dihedral angles extracted from a confromational ensemble
 the `constava analyze` submodule is used.
 
 ```
-usage: constava analyze [-h] [-i <file.csv> [<file.csv> ...]] [--input-format {auto,xvg,csv}] [-o <file.csv>] [--output-format {auto,csv,json,tsv}]
-                        [-m <file.pkl>] [--window <int> [<int> ...]] [--window-series <int> [<int> ...]] [--bootstrap <int> [<int> ...]]
-                        [--bootstrap-samples <int>] [--degrees] [--precision PRECISION] [--seed <int>] [-v]
+usage: constava analyze [-h] [-i <file.csv> [<file.csv> ...]] [--input-format {auto,xvg,csv}] [-o <file.csv>] [--output-format {auto,csv,json,tsv}] [-m <file.pkl>] [--window <int> [<int> ...]]
+                        [--window-series <int> [<int> ...]] [--bootstrap <int> [<int> ...]] [--bootstrap-series <int> [<int> ...]] [--bootstrap-samples <int>] [--degrees] [--precision <int>] [--seed <int>] [-v]
 
 The `constava analyze` submodule analyzes the provided backbone dihedral angles
-and infers the propensities for each residue to reside in a given
-conformational state.
+and infers the propensities for each residue to reside in a given 
+conformational state. 
 
-Each conformational state is a statistical model of based on the backbone
+Each conformational state is a statistical model of based on the backbone 
 dihedrals (phi, psi). The default models were derived from an analysis of NMR
-ensembles and chemical shifts. To analyze a conformational ensemble, the phi-
-and psi-angles for each conformational state in the ensemble need to be
-provided.
+ensembles and chemical shifts. To analyze a conformational ensemble, the phi- 
+and psi-angles for each conformational state in the ensemble need to be 
+provided. 
 
-As input data the backbone dihedral angles extracted from the conformational
-ensemble need to be provided. Those can be generated using the
+As input data the backbone dihedral angles extracted from the conformational 
+ensemble need to be provided. Those can be generated using the 
 `constava dihedrals` submodule (`--input-format csv`) or GROMACS'
 `gmx chi` module (`--input-format xvg`).
 
 optional arguments:
-  -h, --help            show this help message and exit
+  -h, --help            Show this help message and exit
 
 Input & output options:
   -i <file.csv> [<file.csv> ...], --input <file.csv> [<file.csv> ...]
@@ -238,35 +232,39 @@ Input & output options:
 
 Conformational state model options:
   -m <file.pkl>, --load-model <file.pkl>
-                        Load a conformational state model from the given pickled
+                        Load a conformational state model from the given pickled 
                         file. If not provided, the default model will be used.
 
 Subsampling options:
   --window <int> [<int> ...]
-                        Do inference using a moving reading-frame. Each reading
-                        frame consists of <int> consecutive samples. Multiple
+                        Do inference using a moving reading-frame. Each reading 
+                        frame consists of <int> consecutive samples. Multiple 
                         values can be provided.
   --window-series <int> [<int> ...]
-                        Do inference using a moving reading-frame. Each reading
-                        frame consists of <int> consecutive samples. Return the
+                        Do inference using a moving reading-frame. Each reading 
+                        frame consists of <int> consecutive samples. Return the 
                         results for every window rather than the average. This can
-                        result in very large output files. Multiple values can be
+                        result in very large output files. Multiple values can be 
                         provided.
   --bootstrap <int> [<int> ...]
-                        Do inference using <Int> samples obtained through
+                        Do inference using <Int> samples obtained through 
                         bootstrapping. Multiple values can be provided.
+  --bootstrap-series <int> [<int> ...]
+                        Do inference using <Int> samples obtained through 
+                        bootstrapping. Return the results for every subsample
+                        rather than the average. This can result in very 
+                        large output files. Multiple values can be provided.
   --bootstrap-samples <int>
                         When bootstrapping, sample <Int> times from the input data.
                         (default: 500)
 
 Miscellaneous options:
-  --degrees             Set this flag, if dihedrals in the input files are in
+  --degrees             Set this flag, if dihedrals in the input files are in 
                         degrees.
-  --precision PRECISION
-                        Sets the number of decimals in the output files.
+  --precision <int>     Sets the number of decimals in the output files.
   --seed <int>          Set random seed for bootstrap sampling
-  -v, --verbose         Set verbosity level of screen output. Flag can be given
-                        multiple times (up to 2) to gradually increase output to
+  -v, --verbose         Set verbosity level of screen output. Flag can be given 
+                        multiple times (up to 2) to gradually increase output to 
                         debugging mode.
 ```
 
@@ -293,27 +291,27 @@ usage: constava fit-model [-h] [-i <file.json>] -o <file.pkl> [--model-type {kde
 
 The `constava fit-model` submodule is used to generate the probabilistic
 conformational state models used in the analysis. By default, when running
-`constava analyze` these models are generated on-the-fly. In selected cases
+`constava analyze` these models are generated on-the-fly. In selected cases 
 generating a model beforehand and loading it can be useful, though.
 
 We provide two model types. kde-Models are the default. They are fast to fit
-but may be slow in the inference in large conformational ensembles (e.g.,
+but may be slow in the inference in large conformational ensembles (e.g., 
 long-timescale MD simulations). The idea of grid-Models is, to replace
 the continuous probability density function of the kde-Model by a fixed set
-of grid-points. The PDF for any sample is then estimated by linear
+of grid-points. The PDF for any sample is then estimated by linear 
 interpolation between the nearest grid points. This is slightly less
-accurate then the kde-Model but speeds up inference significantly.
+accurate than the kde-Model but speeds up inference significantly.
 
 optional arguments:
-  -h, --help            show this help message and exit
+  -h, --help            Show this help message and exit
 
 Input and output options:
   -i <file.json>, --input <file.json>
                         The data to which the new conformational state models will
-                        be fitted. It should be provided as a JSON file. The
-                        top-most key should indicate the names of the
+                        be fitted. It should be provided as a JSON file. The 
+                        top-most key should indicate the names of the 
                         conformational states. On the level below, lists of phi-/
-                        psi pairs for each stat should be provided. If not provided
+                        psi pairs for each stat should be provided. If not provided 
                         the default data from the publication will be used.
   -o <file.pkl>, --output <file.pkl>
                         Write the generated model to a pickled file, that can be
@@ -321,22 +319,22 @@ Input and output options:
 
 Conformational state model options:
   --model-type {kde,grid}
-                        The probabilistic conformational state model used. The
+                        The probabilistic conformational state model used. The 
                         default is `kde`. The alternative `grid` runs significantly
                         faster while slightly sacrificing accuracy: {'kde', 'grid'}
                         (default: 'kde')
   --kde-bandwidth <float>
-                        This flag controls the bandwidth of the Gaussian kernel
+                        This flag controls the bandwidth of the Gaussian kernel 
                         density estimator. (default: 0.13)
-  --grid-points <int>   This flag controls how many grid points are used to
+  --grid-points <int>   This flag controls how many grid points are used to 
                         describe the probability density function. Only applies if
                         `--model-type` is set to `grid`. (default: 10000)
 
 Miscellaneous options:
-  --degrees             Set this flag, if dihedrals in `model-data` are in degrees
+  --degrees             Set this flag, if dihedrals in `model-data` are in degrees 
                         instead of radians.
-  -v, --verbose         Set verbosity level of screen output. Flag can be given
-                        multiple times (up to 2) to gradually increase output to
+  -v, --verbose         Set verbosity level of screen output. Flag can be given 
+                        multiple times (up to 2) to gradually increase output to 
                         debugging mode.
 ```
 
@@ -355,7 +353,7 @@ constava fit-model -v \
 
 ### Execution as a python library
 
-The module provides the `Constava` class a general interface to softwares 
+The module provides the `Constava` class a general interface to software's 
 features. The only notable exception is the extraction of dihedrals,
 which is done through a separate function.
 
@@ -458,30 +456,31 @@ In the following table, all available parameters of the Python interface (`Const
 class) and their corresponding command line arguments are listed. The defaults for 
 parameters in Python and command line are the same.
 
-| Python parameter | Command line argument | Description |
-|---|---|---|
-| `input_files : List[str] or str` | `constava analyze --input <file> [<file> ...]`  | Input file(s) that contain the dihedral angles. |
-| `input_format : str` | `constava analyze --input-format <enum>` | Format of the input file: `{'auto', 'csv', 'xvg'}` |
-| `output_file : str` | `constava analyze --output <file>` | The file to write the output to. |
-| `output_format : str` | `constava analyze --output-format <enum>` | Format of output file: `{'auto', 'csv', 'json', 'tsv'}` |
-| | | |
-| `model_type : str` | `constava fit-model --model-type <enum>` | The probabilistic conformational state model used. Default is `kde`. The alternative `grid` runs significantly faster while slightly sacrificing accuracy: `{'kde', 'grid'}` |
-| `model_load : str` | `constava analyze --load-model <file>` | Load a conformational state model from the given pickled file. |
-| `model_data : str` | `constava fit-model --input <file>` | Fit conformational state models to data provided in the given file. |
-| `model_dump : str` | `constava fit-model --output <file>` | Write the generated model to a pickled file, that can be loaded again using `model_load`. |
-| | | |
-| `window : List[int] or int` | `constava analyze --window <Int>  [<Int> ...]` | Do inference using a moving reading-frame of <int> consecutive samples. Multiple values can be given as a list. |
-| `window_series : List[int] or int` | `constava analyze --window-series <Int>  [<Int> ...]` | Do inference using a moving reading-frame of <int> consecutive samples. Return the results for every window rather than the average. Multiple values can be given as a list. |
-| `bootstrap : List[int] or int` | `constava analyze --bootstrap <Int> [<Int>  ...]` | Do inference using <Int> samples obtained through bootstrapping. Multiple values can be given as a list. |
-| `bootstrap_samples : int` | `constava analyze --bootstrap-samples <Int> ` | When bootstrapping, sample <Int> times from the input data. |
-| | | |
-| `input_degrees : bool` | `constava analyze --degrees` | Set `True` if input files are in degrees. |
-| `model_data_degrees : bool` | `constava fit-model --degrees` | Set `True` if the data given under `model_data` to is given in degrees. |
-| `precision : int` | `constava analyze --precision <int> ` | Sets the number of decimals in the output files. By default, 4 decimals. |
-| `kde_bandwidth : float` | `constava fit-model --kde-bandwidth <float>` | This controls the bandwidth of the Gaussian kernel density estimator. |
-| `grid_points : int` | `constava analyze --grid-points <int>` | When `model_type` equals 'grid', this controls how many grid points are used to describe the probability density function. |
-| `seed : int` | `constava analyze --seed <int>` | Set the random seed especially for bootstrapping. |
-| `verbose : int` | `constava <...> -v [-v] ` | Set verbosity level of screen output. |
+| Python parameter                      | Command line argument                                    | Description                                                                                                                                                                  |
+|---------------------------------------|----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `input_files : List[str] or str`      | `constava analyze --input <file> [<file> ...]`           | Input file(s) that contain the dihedral angles.                                                                                                                              |
+| `input_format : str`                  | `constava analyze --input-format <enum>`                 | Format of the input file: `{'auto', 'csv', 'xvg'}`                                                                                                                           |
+| `output_file : str`                   | `constava analyze --output <file>`                       | The file to write the output to.                                                                                                                                             |
+| `output_format : str`                 | `constava analyze --output-format <enum>`                | Format of output file: `{'auto', 'csv', 'json', 'tsv'}`                                                                                                                      |
+|                                       |                                                          |                                                                                                                                                                              |
+| `model_type : str`                    | `constava fit-model --model-type <enum>`                 | The probabilistic conformational state model used. Default is `kde`. The alternative `grid` runs significantly faster while slightly sacrificing accuracy: `{'kde', 'grid'}` |
+| `model_load : str`                    | `constava analyze --load-model <file>`                   | Load a conformational state model from the given pickled file.                                                                                                               |
+| `model_data : str`                    | `constava fit-model --input <file>`                      | Fit conformational state models to data provided in the given file.                                                                                                          |
+| `model_dump : str`                    | `constava fit-model --output <file>`                     | Write the generated model to a pickled file, that can be loaded again using `model_load`.                                                                                    |
+|                                       |                                                          |                                                                                                                                                                              |
+| `window : List[int] or int`           | `constava analyze --window <Int>  [<Int> ...]`           | Do inference using a moving reading-frame of <int> consecutive samples. Multiple values can be given as a list.                                                              |
+| `window_series : List[int] or int`    | `constava analyze --window-series <Int>  [<Int> ...]`    | Do inference using a moving reading-frame of <int> consecutive samples. Return the results for every window rather than the average. Multiple values can be given as a list. |
+| `bootstrap : List[int] or int`        | `constava analyze --bootstrap <Int> [<Int>  ...]`        | Do inference using <Int> samples obtained through bootstrapping. Multiple values can be given as a list.                                                                     |
+| `bootstrap_series : List[int] or int` | `constava analyze --bootstrap-series <Int>  [<Int> ...]` | Do inference using <Int> samples obtained through bootstrapping. Return the results for every bootstrap rather than the average. Multiple values can be given as a list.     |
+| `bootstrap_samples : int`             | `constava analyze --bootstrap-samples <Int> `            | When bootstrapping, sample <Int> times from the input data.                                                                                                                  |
+|                                       |                                                          |                                                                                                                                                                              |
+| `input_degrees : bool`                | `constava analyze --degrees`                             | Set `True` if input files are in degrees.                                                                                                                                    |
+| `model_data_degrees : bool`           | `constava fit-model --degrees`                           | Set `True` if the data given under `model_data` to is given in degrees.                                                                                                      |
+| `precision : int`                     | `constava analyze --precision <int> `                    | Sets the number of decimals in the output files. By default, 4 decimals.                                                                                                     |
+| `kde_bandwidth : float`               | `constava fit-model --kde-bandwidth <float>`             | This controls the bandwidth of the Gaussian kernel density estimator.                                                                                                        |
+| `grid_points : int`                   | `constava analyze --grid-points <int>`                   | When `model_type` equals 'grid', this controls how many grid points are used to describe the probability density function.                                                   |
+| `seed : int`                          | `constava analyze --seed <int>`                          | Set the random seed especially for bootstrapping.                                                                                                                            |
+| `verbose : int`                       | `constava <...> -v [-v] `                                | Set verbosity level of screen output.                                                                                                                                        |
 
 [<Go to top>](#constava)
 

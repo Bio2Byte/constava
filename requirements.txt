@@ -1,0 +1,4 @@
+MDAnalysis
+numpy
+pandas
+scikit-learn

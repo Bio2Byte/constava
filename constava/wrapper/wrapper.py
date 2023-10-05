@@ -6,7 +6,7 @@ from ..utils.logging import logging
 from .params import ConstavaParameters
 from ..io import ResultsWriter, EnsembleReader
 from ..calc.calculator import ConfStateCalculator
-from ..calc.subsampling import SubsamplingBootstrap, SubsamplingWindow, SubsamplingWindowSeries
+from ..calc.subsampling import SubsamplingBootstrap, SubsamplingBootstrapSeries, SubsamplingWindow, SubsamplingWindowSeries
 from ..calc.csmodels import ConfStateModelABC, ConfStateModelKDE, ConfStateModelGrid
 
 # The logger for the wrapper
@@ -128,6 +128,7 @@ class Constava:
                 window = self.get_param("window"),
                 window_series = self.get_param("window_series"),
                 bootstrap = self.get_param("bootstrap"),
+                bootstrap_series = self.get_param("bootstrap_series"),
                 bootstrap_samples = self.get_param("bootstrap_samples"),
                 bootstrap_seed  = self.get_param("seed"))
 
@@ -252,8 +253,8 @@ class Constava:
 
     def initialize_calculator(self, csmodel: ConfStateModelABC = None, 
             window: List[int] = None, window_series: List[int] = None, 
-            bootstrap: List[int] = None, bootstrap_samples: int = 500, 
-            bootstrap_seed: int = None) -> ConfStateCalculator:
+            bootstrap: List[int] = None, bootstrap_series: List[int] = None,
+            bootstrap_samples: int = 500, bootstrap_seed: int = None) -> ConfStateCalculator:
         """Initializes a ConfStateCalculator.
 
         Parameters:
@@ -271,6 +272,10 @@ class Constava:
                 values can be given as a list.
             bootstrap : List[int]
                 Subsampling using by bootstrapping <int> datapoints. Multiple
+                values can be given as a list.
+            bootstrap_series : List[int] or int
+                Subsampling using by bootstrapping <int> datapoints. Returns the 
+                results for every subsample rather than the average. Multiple 
                 values can be given as a list.
             bootstrap_samples : int
                 When bootstrapping, sample <int> times from the input data.
@@ -299,6 +304,10 @@ class Constava:
             calculator.add_method(new_method)
         for window_size in (window_series or []):
             new_method = SubsamplingWindowSeries(window_size)
+            logger.info(f"... adding subsampling method: {new_method.getShortName()}")
+            calculator.add_method(new_method)
+        for sample_size in (bootstrap_series or []):
+            new_method = SubsamplingBootstrapSeries(sample_size, bootstrap_samples, seed=bootstrap_seed)
             logger.info(f"... adding subsampling method: {new_method.getShortName()}")
             calculator.add_method(new_method)
         return calculator
