@@ -6,60 +6,142 @@ from ..utils.logging import logging
 from .params import ConstavaParameters
 from ..io import ResultsWriter, EnsembleReader
 from ..calc.calculator import ConfStateCalculator
-from ..calc.subsampling import SubsamplingBootstrap, SubsamplingBootstrapSeries, SubsamplingWindow, SubsamplingWindowSeries
+from ..calc.subsampling import SubsamplingBootstrap, SubsamplingBootstrapSeries, SubsamplingWindow, \
+	SubsamplingWindowSeries
 from ..calc.csmodels import ConfStateModelABC, ConfStateModelKDE, ConfStateModelGrid
 
 # The logger for the wrapper
 logger = logging.getLogger("Constava")
 
+
 def cache_csmodel(func):
-    """Decorator for caching conformational state models"""
-    def __inner(self: "Constava", *args, **kwargs):
-        if func.__name__ == "load_csmodel":
-            new_cshash = hash((
-                args[0] if len(args) > 0 else kwargs.get("pickled_csmodel", None),))
-        elif func.__name__ == "fit_csmodel":
-            new_cshash = hash((
-                args[0] if len(args) > 0 else kwargs.get("model_type", "kde"),
-                args[1] if len(args) > 1 else kwargs.get("model_data", None),
-                args[2] if len(args) > 2 else kwargs.get("kde_bandwidth", .13),
-                args[3] if len(args) > 3 else kwargs.get("grid_points", 10_000),
-                args[4] if len(args) > 4 else kwargs.get("model_data_degrees", False),))
-        else:
-            raise TypeError("Decorator `cache_csmodel` only works with `load_csmodel` and `fit_csmodel`")
-        
-        if self._cshash == new_cshash:
-            logger.info("No change to model parameters. Using preloaded model.")
-        else:
-            csmodel = func(self, *args, **kwargs)
-            self._csmodel, self._cshash = csmodel, new_cshash
-        return self._csmodel
-    return __inner
+	"""Decorator for caching conformational state models"""
+
+	def __inner(self: "Constava", *args, **kwargs):
+		if func.__name__ == "load_csmodel":
+			new_cshash = hash((
+				args[0] if len(args) > 0 else kwargs.get("pickled_csmodel", None),))
+		elif func.__name__ == "fit_csmodel":
+			new_cshash = hash((
+				args[0] if len(args) > 0 else kwargs.get("model_type", "kde"),
+				args[1] if len(args) > 1 else kwargs.get("model_data", None),
+				args[2] if len(args) > 2 else kwargs.get("kde_bandwidth", .13),
+				args[3] if len(args) > 3 else kwargs.get("grid_points", 10_000),
+				args[4] if len(args) > 4 else kwargs.get("model_data_degrees", False),))
+		else:
+			raise TypeError("Decorator `cache_csmodel` only works with `load_csmodel` and `fit_csmodel`")
+
+		if self._cshash == new_cshash:
+			logger.info("No change to model parameters. Using preloaded model.")
+		else:
+			csmodel = func(self, *args, **kwargs)
+			self._csmodel, self._cshash = csmodel, new_cshash
+		return self._csmodel
+
+	return __inner
 
 
 class Constava:
-    """Interface class for all functionalities of Constava.
+	"""Interface class for all functionalities of Constava. This tool allows the probabilistic description of protein
+	conformation from a set of density-defined conformational states. Six solution NMR-defined conformational states
+	are provided by default, but users can define their own probability density functions with the method fit_csmodel().
 
     Methods:
     --------
         set_param(parameter, value)
-            Sets a parameters to a given value.
+            Sets a parameter to a given value. Refer to `ConstavaParameters` for details.
         get_param(parameter) -> value
             Returns the current value of the given parameter
         show_params() -> str
             Returns the current set of parameters as a string
         run()
             Runs Constava with the current parameters
+        fit_csmodel()
+            Fits a conformational state model to the provided data. Complex method, read its docstrings for details.
+
+    Parameters (Defined in ConstavaParameters):
+    -----------
+    The following parameters can be set directly in the `__init__` method or through
+    the `set_params()` method. Detailed descriptions and default values are available
+    in the `ConstavaParameters` documentation.
+
+        input_files : List[str] or str
+            Input file(s) that contain the dihedral angles.
+        input_format : str
+            Format of the input file. Options include:
+            - 'auto': Automatically detect the file format.
+            - 'csv': Comma-separated values format.
+            - 'xvg': XVG format used by GROMACS for graphing.
+            Default is 'auto'.
+        output_file : str
+            The file to write the output to.
+        output_format : str
+            Format of the output file. Options include:
+            - 'auto': Automatically select the output format based on the input format or other criteria.
+            - 'csv': Comma-separated values format, suitable for spreadsheets and simple data analyses.
+            - 'json': JSON format, which is lightweight and easy for humans to read and write, and easy for machines
+            to parse and generate.
+            - 'tsv': Tab-separated values format, useful for tabular data that is less complex than CSV data.
+            Default is 'auto'.
+        model_type : str
+            Specifies the probabilistic conformational state model used. Options include:
+            - 'kde': Kernel Density Estimation. Provides a more accurate model at the cost of computational time.
+            - 'grid': A grid-based approximation that runs significantly faster but with a slight sacrifice in accuracy.
+            Default is 'kde'.
+        model_load : str
+            Load a conformational state model from the given pickled file.
+        model_data : str
+            Fit conformational state models to data provided in the given file.
+        model_dump : str
+            Write the generated model to a pickled file, that can be loaded
+            again using `model_load`.
+        window : List[int] or int
+            Do inference using a moving reading-frame of <int> consecutive samples.
+            Multiple values can be given as a list.
+        window_series : List[int] or int
+            Do inference using a moving reading-frame of <int> consecutive samples.
+            Return the results for every window rather than the average. Multiple
+            values can be given as a list.
+        bootstrap : List[int] or int
+            Do inference using <Int> samples obtained through bootstrapping.
+            Multiple values can be given as a list.
+        bootstrap_series : List[int] or int
+            Do inference using <Int> samples obtained through bootstrapping.
+            Return the results for every subsample rather than the average. Multiple
+            values can be given as a list.
+        bootstrap_samples : int
+            When bootstrapping, sample <Int> times from the input data.
+        input_degrees : bool
+            Set `True` if input files are in degrees.
+        model_data_degrees : bool
+            Set `True` if the data given under `model_data` to is given in degrees.
+        precision : int
+            Sets the number of decimals in the output files. By default, 4 decimal.
+        kde_bandwidth : float
+            This controls the bandwidth of the Gaussian kernel density estimator.
+        grid_points : int
+            When `model_type` == 'grid', this controls how many grid points
+            are used to describe the probability density function.
+        seed : int
+            Set the random seed especially for bootstrapping.
+
+     Example:
+    --------
+        ```python
+        constava = Constava(input_files="dihedral_angles.csv", model_type="kde")
+        constava.set_param("precision", 4)
+        result = constava.run()
+        ```
     """
 
-    def __init__(self, parameters: ConstavaParameters = None, **kwargs):
-        """Initializes the python interface for Constava. Parameters can be 
+	def __init__(self, parameters: ConstavaParameters = None, **kwargs):
+		"""Initializes the python interface for Constava. Parameters can be
         provided as a ConstavaParameters class
         
         Parameters:
         -----------
             parameters : ConstavaParameters
-                ConstavaParameters object ontaining all parameters (if provided
+                ConstavaParameters object containing all parameters (if provided
                 kwargs will be ignored)
             **kwargs :
                 To only set individual parameters, those parameters can be 
@@ -67,87 +149,154 @@ class Constava:
                 default values are used. For a full list of available settings
                 and their defaults, check: `help(ConstavaParameters)`
         """
-        logger.info("Constava: Initializing python interface...")
-        if parameters is None:
-            parameters = ConstavaParameters(**kwargs)
-        parameters._constava = self
-        self.parameters = parameters
-        self.results = None
-        self._csmodel = None    # Preloaded conformational state models
-        self._cshash = None     # Hashed parameters of the models
+		logger.info("Constava: Initializing python interface...")
+		if parameters is None:
+			parameters = ConstavaParameters(**kwargs)
+		parameters._constava = self
+		self.parameters = parameters
+		self.results = None
+		self._csmodel = None  # Preloaded conformational state models
+		self._cshash = None  # Hashed parameters of the models
 
-    def get_param(self, parameter: str):
-        """Returns the current value of the given parameter"""
-        return getattr(self.parameters, parameter)
-        
-    def set_param(self, parameter: str, value):
-        """Sets a parameter to a given value"""
-        logger.info(f"Setting `{parameter} = {value}`")
-        setattr(self.parameters, parameter, value)
-        logger.debug(f"New parameters: {self.show_params()}")
+	def get_param(self, parameter: str):
+		"""Returns the current value of the given parameter"""
+		return getattr(self.parameters, parameter)
 
-    def unset_param(self, parameter: str):
-        """Sets a parameter to None"""
-        setattr(self.parameters, parameter, None)
+	def set_param(self, parameter: str, value):
+		"""Sets a parameter to a given value
 
-    def show_params(self) -> str:
-        """Returns a string with all currently set parameters"""
-        return repr(self.parameters)
-    
-    def run(self) -> None:
-        """Calculate conformational state variabilities and conformational
+        Parameters (Defined in ConstavaParameters):
+        -----------
+        The following parameters can be set directly in the `__init__` method or through
+        the `set_params()` method. Detailed descriptions and default values are available
+        in the `ConstavaParameters` documentation.
+
+            input_files : List[str] or str
+                Input file(s) that contain the dihedral angles.
+            input_format : str
+                Format of the input file. Options include:
+                - 'auto': Automatically detect the file format.
+                - 'csv': Comma-separated values format.
+                - 'xvg': XVG format used by GROMACS for graphing.
+                Default is 'auto'.
+            output_file : str
+                The file to write the output to.
+            output_format : str
+                Format of the output file. Options include:
+                - 'auto': Automatically select the output format based on the input format or other criteria.
+                - 'csv': Comma-separated values format, suitable for spreadsheets and simple data analyses.
+                - 'json': JSON format, which is lightweight and easy for humans to read and write, and easy for machines
+                to parse and generate.
+                - 'tsv': Tab-separated values format, useful for tabular data that is less complex than CSV data.
+                Default is 'auto'.
+            model_type : str
+                Specifies the probabilistic conformational state model used. Options include:
+                - 'kde': Kernel Density Estimation. Provides a more accurate model at the cost of computational time.
+                - 'grid': A grid-based approximation that runs significantly faster but with a slight sacrifice in accuracy.
+                Default is 'kde'.
+            model_load : str
+                Load a conformational state model from the given pickled file.
+            model_data : str
+                Fit conformational state models to data provided in the given file.
+            model_dump : str
+                Write the generated model to a pickled file, that can be loaded
+                again using `model_load`.
+            window : List[int] or int
+                Do inference using a moving reading-frame of <int> consecutive samples.
+                Multiple values can be given as a list.
+            window_series : List[int] or int
+                Do inference using a moving reading-frame of <int> consecutive samples.
+                Return the results for every window rather than the average. Multiple
+                values can be given as a list.
+            bootstrap : List[int] or int
+                Do inference using <Int> samples obtained through bootstrapping.
+                Multiple values can be given as a list.
+            bootstrap_series : List[int] or int
+                Do inference using <Int> samples obtained through bootstrapping.
+                Return the results for every subsample rather than the average. Multiple
+                values can be given as a list.
+            bootstrap_samples : int
+                When bootstrapping, sample <Int> times from the input data.
+            input_degrees : bool
+                Set `True` if input files are in degrees.
+            model_data_degrees : bool
+                Set `True` if the data given under `model_data` to is given in degrees.
+            precision : int
+                Sets the number of decimals in the output files. By default, 4 decimal.
+            kde_bandwidth : float
+                This controls the bandwidth of the Gaussian kernel density estimator.
+            grid_points : int
+                When `model_type` == 'grid', this controls how many grid points
+                are used to describe the probability density function.
+            seed : int
+                Set the random seed especially for bootstrapping."""
+
+		logger.info(f"Setting `{parameter} = {value}`")
+		setattr(self.parameters, parameter, value)
+		logger.debug(f"New parameters: {self.show_params()}")
+
+	def unset_param(self, parameter: str):
+		"""Sets a parameter to None"""
+		setattr(self.parameters, parameter, None)
+
+	def show_params(self) -> str:
+		"""Returns a string with all currently set parameters"""
+		return repr(self.parameters)
+
+	def run(self) -> None:
+		"""Calculate conformational state variabilities and conformational
         state variabilites with the given parameters."""
-        # Reset results
-        self.results = None
+		# Reset results
+		self.results = None
 
-        # Initialize an reader for input file(s)
-        reader = self.initialize_reader(
-                format = self.get_param("input_format"), 
-                in_degrees = self.get_param("input_degrees"))
-        
-        # Initialize writer for results
-        writer = self.initialize_writer(
-                outfile = self.get_param("output_file"),
-                format = self.get_param("output_format"),
-                float_precision = self.get_param("precision"))
-        
-        # Fit or load a conformational state model
-        if os.path.isfile(self.get_param("model_load") or ""):
-            csmodel = self.load_csmodel(pickled_csmodel = self.get_param("model_load"))
-        else:
-            csmodel = self.fit_csmodel(
-                model_type = self.get_param("model_type"),
-                model_data = self.get_param("model_data"), 
-                kde_bandwidth = self.get_param("kde_bandwidth"),
-                grid_points = self.get_param("grid_points"),
-                model_data_degrees = self.get_param("model_data_degrees"))
+		# Initialize a reader for input file(s)
+		reader = self.initialize_reader(
+			format=self.get_param("input_format"),
+			in_degrees=self.get_param("input_degrees"))
 
-        # Initialize a calculator (logged inside function)
-        calculator = self.initialize_calculator(
-                csmodel = csmodel,
-                window = self.get_param("window"),
-                window_series = self.get_param("window_series"),
-                bootstrap = self.get_param("bootstrap"),
-                bootstrap_series = self.get_param("bootstrap_series"),
-                bootstrap_samples = self.get_param("bootstrap_samples"),
-                bootstrap_seed  = self.get_param("seed"))
+		# Initialize writer for results
+		writer = self.initialize_writer(
+			outfile=self.get_param("output_file"),
+			format=self.get_param("output_format"),
+			float_precision=self.get_param("precision"))
 
-        # Read input files
-        input_files = self.get_param("input_files")
-        logger.info(f"Reading dihedrals from {len(input_files)} files...")
-        logger.debug("\n\t*  ".join(["... input file list:", *input_files]))
-        ensemble = reader.readFiles(*input_files)
-        
-        # Do the inference
-        logger.info("Starting inference...")
-        self.results = calculator.calculate(ensemble)
-        
-        # Write results
-        logger.info(f"Writing results to file: {writer.filename}")
-        writer.write_results(self.results)
-    
-    def initialize_reader(self, format: str = "auto", in_degrees: bool = False) -> EnsembleReader:
-        """Initializes an EnsembleReader.
+		# Fit or load a conformational state model
+		if os.path.isfile(self.get_param("model_load") or ""):
+			csmodel = self.load_csmodel(pickled_csmodel=self.get_param("model_load"))
+		else:
+			csmodel = self.fit_csmodel(
+				model_type=self.get_param("model_type"),
+				model_data=self.get_param("model_data"),
+				kde_bandwidth=self.get_param("kde_bandwidth"),
+				grid_points=self.get_param("grid_points"),
+				model_data_degrees=self.get_param("model_data_degrees"))
+
+		# Initialize a calculator (logged inside function)
+		calculator = self.initialize_calculator(
+			csmodel=csmodel,
+			window=self.get_param("window"),
+			window_series=self.get_param("window_series"),
+			bootstrap=self.get_param("bootstrap"),
+			bootstrap_series=self.get_param("bootstrap_series"),
+			bootstrap_samples=self.get_param("bootstrap_samples"),
+			bootstrap_seed=self.get_param("seed"))
+
+		# Read input files
+		input_files = self.get_param("input_files")
+		logger.info(f"Reading dihedrals from {len(input_files)} files...")
+		logger.debug("\n\t*  ".join(["... input file list:", *input_files]))
+		ensemble = reader.readFiles(*input_files)
+
+		# Do the inference
+		logger.info("Starting inference...")
+		self.results = calculator.calculate(ensemble)
+
+		# Write results
+		logger.info(f"Writing results to file: {writer.filename}")
+		writer.write_results(self.results)
+
+	def initialize_reader(self, format: str = "auto", in_degrees: bool = False) -> EnsembleReader:
+		"""Initializes an EnsembleReader.
         
         Parameters:
         -----------
@@ -161,13 +310,13 @@ class Constava:
             reader
                 An EnsembleReader object.
         """
-        logger.info("Initializing reader for input file(s)...")
-        logger.debug(f"... setting reader parameters: {format=}, {in_degrees=}")
-        reader = EnsembleReader(filetype_str=format, degrees2radians=in_degrees)
-        return reader
-    
-    def initialize_writer(self, outfile, format: str = "auto", float_precision: int = 4) -> ResultsWriter:
-        """Initializes a ResultsWriter.
+		logger.info("Initializing reader for input file(s)...")
+		logger.debug(f"... setting reader parameters: {format=}, {in_degrees=}")
+		reader = EnsembleReader(filetype_str=format, degrees2radians=in_degrees)
+		return reader
+
+	def initialize_writer(self, outfile, format: str = "auto", float_precision: int = 4) -> ResultsWriter:
+		"""Initializes a ResultsWriter.
         
         Parameters:
         -----------
@@ -184,18 +333,18 @@ class Constava:
             writer
                 A ResultsWriter object.
         """
-        if outfile is None:
-            return None
-        logger.info("Initializing writer for results...")
-        logger.debug(f"... setting writer parameters: {outfile=}, {format=}, {float_precision=}")
-        writer = ResultsWriter(outfile, format=format, float_precision=float_precision)
-        return writer
-    
-    @cache_csmodel
-    def fit_csmodel(self, model_type: str = "kde", model_data: str = None, 
-            kde_bandwidth: float = .13, grid_points: int = 10_000,
-            model_data_degrees: bool = False) -> ConfStateModelABC:
-        """Fits a conformational state model to the provided data.
+		if outfile is None:
+			return None
+		logger.info("Initializing writer for results...")
+		logger.debug(f"... setting writer parameters: {outfile=}, {format=}, {float_precision=}")
+		writer = ResultsWriter(outfile, format=format, float_precision=float_precision)
+		return writer
+
+	@cache_csmodel
+	def fit_csmodel(self, model_type: str = "kde", model_data: str = None,
+	                kde_bandwidth: float = .13, grid_points: int = 10_000,
+	                model_data_degrees: bool = False) -> ConfStateModelABC:
+		"""Fits a conformational state model to the provided data.
         
         Parameters:
         -----------
@@ -220,20 +369,20 @@ class Constava:
             csmodel : ConfStateModelABC
                 Probabilistic model describing the conformational states
         """
-        PdfModel = {"kde": ConfStateModelKDE, "grid": ConfStateModelGrid}[model_type]
-        model_data = (model_data or DEFAULT_TRAINING_DATA_PATH)
-        logger.info(f"Fitting model to data in: {model_data}")
-        csmodel = PdfModel.from_fitting(
-            model_data, 
-            in_degrees = model_data_degrees,
-            bandwidth = kde_bandwidth,
-            grid_points = grid_points)
-        logger.info(f"... model fitted: {csmodel}")
-        return csmodel
+		PdfModel = {"kde": ConfStateModelKDE, "grid": ConfStateModelGrid}[model_type]
+		model_data = (model_data or DEFAULT_TRAINING_DATA_PATH)
+		logger.info(f"Fitting model to data in: {model_data}")
+		csmodel = PdfModel.from_fitting(
+			model_data,
+			in_degrees=model_data_degrees,
+			bandwidth=kde_bandwidth,
+			grid_points=grid_points)
+		logger.info(f"... model fitted: {csmodel}")
+		return csmodel
 
-    @cache_csmodel
-    def load_csmodel(self, pickled_csmodel: str) -> ConfStateModelABC:
-        """Load a previously fitted conformational state model from a pickled
+	@cache_csmodel
+	def load_csmodel(self, pickled_csmodel: str) -> ConfStateModelABC:
+		"""Load a previously fitted conformational state model from a pickled
         file.
         
         Parameters:
@@ -246,16 +395,16 @@ class Constava:
             csmodel : ConfStateModelABC
                 Probabilistic model describing the conformational states
         """
-        logger.info(f"Loading conformational state models from file: {pickled_csmodel}")
-        csmodel = ConfStateModelABC.from_pickle(pickled_csmodel)
-        logger.info(f"... model loaded: {csmodel}")
-        return csmodel
+		logger.info(f"Loading conformational state models from file: {pickled_csmodel}")
+		csmodel = ConfStateModelABC.from_pickle(pickled_csmodel)
+		logger.info(f"... model loaded: {csmodel}")
+		return csmodel
 
-    def initialize_calculator(self, csmodel: ConfStateModelABC = None, 
-            window: List[int] = None, window_series: List[int] = None, 
-            bootstrap: List[int] = None, bootstrap_series: List[int] = None,
-            bootstrap_samples: int = 500, bootstrap_seed: int = None) -> ConfStateCalculator:
-        """Initializes a ConfStateCalculator.
+	def initialize_calculator(self, csmodel: ConfStateModelABC = None,
+	                          window: List[int] = None, window_series: List[int] = None,
+	                          bootstrap: List[int] = None, bootstrap_series: List[int] = None,
+	                          bootstrap_samples: int = 500, bootstrap_seed: int = None) -> ConfStateCalculator:
+		"""Initializes a ConfStateCalculator.
 
         Parameters:
         -----------
@@ -287,27 +436,27 @@ class Constava:
             calculator: ConfStateCalculator
                 A ConfStateCalculator object
         """
-        # Quickly generate a csmodel if not done before
-        if csmodel is None:
-            csmodel = self.fit_csmodel()
-        # Initialize the calculator
-        logger.info(f"Initializing calculator with {csmodel}...")
-        calculator = ConfStateCalculator(csmodel)
-        # Add subsampling methods to calculator
-        for window_size in (window or []):
-            new_method = SubsamplingWindow(window_size)
-            logger.info(f"... adding subsampling method: {new_method.getShortName()}")
-            calculator.add_method(new_method)
-        for sample_size in (bootstrap or []):
-            new_method = SubsamplingBootstrap(sample_size, bootstrap_samples, seed=bootstrap_seed)
-            logger.info(f"... adding subsampling method: {new_method.getShortName()}")
-            calculator.add_method(new_method)
-        for window_size in (window_series or []):
-            new_method = SubsamplingWindowSeries(window_size)
-            logger.info(f"... adding subsampling method: {new_method.getShortName()}")
-            calculator.add_method(new_method)
-        for sample_size in (bootstrap_series or []):
-            new_method = SubsamplingBootstrapSeries(sample_size, bootstrap_samples, seed=bootstrap_seed)
-            logger.info(f"... adding subsampling method: {new_method.getShortName()}")
-            calculator.add_method(new_method)
-        return calculator
+		# Quickly generate a csmodel if not done before
+		if csmodel is None:
+			csmodel = self.fit_csmodel()
+		# Initialize the calculator
+		logger.info(f"Initializing calculator with {csmodel}...")
+		calculator = ConfStateCalculator(csmodel)
+		# Add subsampling methods to calculator
+		for window_size in (window or []):
+			new_method = SubsamplingWindow(window_size)
+			logger.info(f"... adding subsampling method: {new_method.getShortName()}")
+			calculator.add_method(new_method)
+		for sample_size in (bootstrap or []):
+			new_method = SubsamplingBootstrap(sample_size, bootstrap_samples, seed=bootstrap_seed)
+			logger.info(f"... adding subsampling method: {new_method.getShortName()}")
+			calculator.add_method(new_method)
+		for window_size in (window_series or []):
+			new_method = SubsamplingWindowSeries(window_size)
+			logger.info(f"... adding subsampling method: {new_method.getShortName()}")
+			calculator.add_method(new_method)
+		for sample_size in (bootstrap_series or []):
+			new_method = SubsamplingBootstrapSeries(sample_size, bootstrap_samples, seed=bootstrap_seed)
+			logger.info(f"... adding subsampling method: {new_method.getShortName()}")
+			calculator.add_method(new_method)
+		return calculator
