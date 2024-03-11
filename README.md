@@ -72,9 +72,14 @@ We recommend this installation for most users.
   source constava/bin/activate
   ```
 
-2. Install the python module
+2. Install the python module:
   ```
   pip install constava
+  ```
+
+3. Run tests to ensure the successful installation (optional but recommended):
+  ```
+  constava test
   ```
 
 If the package requires to be uninstalled, run `pip uninstall constava`. 
@@ -106,6 +111,8 @@ directly.
   make build
   # Install locally
   make install
+  # Test installation
+  make test
   ```
 
 If the package requires to be uninstalled, run `make uninstall` in the terminal 
