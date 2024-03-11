@@ -48,95 +48,53 @@ class Constava:
 
     Methods:
     --------
-        set_param(parameter, value)
-            Sets a parameter to a given value. Refer to `ConstavaParameters` for details.
-        get_param(parameter) -> value
-            Returns the current value of the given parameter
-        show_params() -> str
-            Returns the current set of parameters as a string
         run()
-            Runs Constava with the current parameters
+            Runs Constava with the current parameters. If the parameters have been provided with the initialisation
+            of the Constava() object, this is the only method necessary to run any analysis.
+
+		# Methods to adjust parameters of the Constava toolkit.
+        set_param(parameter, value)
+            Sets a parameter to a given value. Refer to `help(Constava().parameters)` for details.
+        get_param(parameter) -> value
+            Returns the current value of the given parameter.
+        unset_param(parameter):
+            Sets the specified parameter to its default value.
+        show_params() -> str
+            Returns the current set of parameters as a string.
+
+		# Methods to access sub-functionalities of the Constava toolkit.
+		initialize_reader(format="auto", in_degrees=False):
+            Initializes an EnsembleReader for reading input files, with the format specified by 'format' and whether
+            the data is in degrees specified by 'in_degrees'.
+        initialize_writer(outfile, format="auto", float_precision=4):
+            Initializes a ResultsWriter for writing output results to a file specified by 'outfile', in the format
+            specified by 'format', and with float precision specified by 'float_precision'.
         fit_csmodel()
             Fits a conformational state model to the provided data. Complex method, read its docstrings for details.
+        load_csmodel(pickled_csmodel):
+            Loads a conformational state model from a pickled file specified by the 'pickled_csmodel' path.
+	    initialize_calculator(csmodel=None, window=None, window_series=None, bootstrap=None, bootstrap_series=None,
+	    bootstrap_samples=500, bootstrap_seed=None):
+	        Initializes a ConfStateCalculator with the specified conformational state model 'csmodel', subsampling
+	        parameters 'window', 'window_series', 'bootstrap', 'bootstrap_series', and bootstrap parameters
+	        'bootstrap_samples' and 'bootstrap_seed'.
 
-    Parameters (Defined in ConstavaParameters):
+    Parameters (Defined in ConstavaParameters class):
     -----------
-    The following parameters can be set directly in the `__init__` method or through
-    the `set_params()` method. Detailed descriptions and default values are available
-    in the `ConstavaParameters` documentation.
+    Refer to `help(Constava().parameters)` for details.
 
-        input_files : List[str] or str
-            Input file(s) that contain the dihedral angles.
-        input_format : str
-            Format of the input file. Options include:
-            - 'auto': Automatically detect the file format.
-            - 'csv': Comma-separated values format.
-            - 'xvg': XVG format used by GROMACS for graphing.
-            Default is 'auto'.
-        output_file : str
-            The file to write the output to.
-        output_format : str
-            Format of the output file. Options include:
-            - 'auto': Automatically select the output format based on the input format or other criteria.
-            - 'csv': Comma-separated values format, suitable for spreadsheets and simple data analyses.
-            - 'json': JSON format, which is lightweight and easy for humans to read and write, and easy for machines
-            to parse and generate.
-            - 'tsv': Tab-separated values format, useful for tabular data that is less complex than CSV data.
-            Default is 'auto'.
-        model_type : str
-            Specifies the probabilistic conformational state model used. Options include:
-            - 'kde': Kernel Density Estimation. Provides a more accurate model at the cost of computational time.
-            - 'grid': A grid-based approximation that runs significantly faster but with a slight sacrifice in accuracy.
-            Default is 'kde'.
-        model_load : str
-            Load a conformational state model from the given pickled file.
-        model_data : str
-            Fit conformational state models to data provided in the given file.
-        model_dump : str
-            Write the generated model to a pickled file, that can be loaded
-            again using `model_load`.
-        window : List[int] or int
-            Do inference using a moving reading-frame of <int> consecutive samples.
-            Multiple values can be given as a list.
-        window_series : List[int] or int
-            Do inference using a moving reading-frame of <int> consecutive samples.
-            Return the results for every window rather than the average. Multiple
-            values can be given as a list.
-        bootstrap : List[int] or int
-            Do inference using <Int> samples obtained through bootstrapping.
-            Multiple values can be given as a list.
-        bootstrap_series : List[int] or int
-            Do inference using <Int> samples obtained through bootstrapping.
-            Return the results for every subsample rather than the average. Multiple
-            values can be given as a list.
-        bootstrap_samples : int
-            When bootstrapping, sample <Int> times from the input data.
-        input_degrees : bool
-            Set `True` if input files are in degrees.
-        model_data_degrees : bool
-            Set `True` if the data given under `model_data` to is given in degrees.
-        precision : int
-            Sets the number of decimals in the output files. By default, 4 decimal.
-        kde_bandwidth : float
-            This controls the bandwidth of the Gaussian kernel density estimator.
-        grid_points : int
-            When `model_type` == 'grid', this controls how many grid points
-            are used to describe the probability density function.
-        seed : int
-            Set the random seed especially for bootstrapping.
-
-     Example:
+    Example:
     --------
         ```python
-        constava = Constava(input_files="dihedral_angles.csv", model_type="kde")
-        constava.set_param("precision", 4)
-        result = constava.run()
+        c = Constava(input_files="dihedral_angles.csv", model_type="kde", output_file="output.csv", bootstrap=3)
+        c.set_param("precision", 4)
+        result = c.run()
         ```
     """
 
 	def __init__(self, parameters: ConstavaParameters = None, **kwargs):
 		"""Initializes the python interface for Constava. Parameters can be
-        provided as a ConstavaParameters class
+        provided as a ConstavaParameters class. For details see `help(Constava().parameters)`
         
         Parameters:
         -----------
@@ -147,7 +105,7 @@ class Constava:
                 To only set individual parameters, those parameters can be 
                 provided as keyword arguments. For all other parameters
                 default values are used. For a full list of available settings
-                and their defaults, check: `help(ConstavaParameters)`
+                and their defaults, check: `help(Constava().parameters)`
         """
 		logger.info("Constava: Initializing python interface...")
 		if parameters is None:
@@ -164,72 +122,7 @@ class Constava:
 
 	def set_param(self, parameter: str, value):
 		"""Sets a parameter to a given value
-
-        Parameters (Defined in ConstavaParameters):
-        -----------
-        The following parameters can be set directly in the `__init__` method or through
-        the `set_params()` method. Detailed descriptions and default values are available
-        in the `ConstavaParameters` documentation.
-
-            input_files : List[str] or str
-                Input file(s) that contain the dihedral angles.
-            input_format : str
-                Format of the input file. Options include:
-                - 'auto': Automatically detect the file format.
-                - 'csv': Comma-separated values format.
-                - 'xvg': XVG format used by GROMACS for graphing.
-                Default is 'auto'.
-            output_file : str
-                The file to write the output to.
-            output_format : str
-                Format of the output file. Options include:
-                - 'auto': Automatically select the output format based on the input format or other criteria.
-                - 'csv': Comma-separated values format, suitable for spreadsheets and simple data analyses.
-                - 'json': JSON format, which is lightweight and easy for humans to read and write, and easy for machines
-                to parse and generate.
-                - 'tsv': Tab-separated values format, useful for tabular data that is less complex than CSV data.
-                Default is 'auto'.
-            model_type : str
-                Specifies the probabilistic conformational state model used. Options include:
-                - 'kde': Kernel Density Estimation. Provides a more accurate model at the cost of computational time.
-                - 'grid': A grid-based approximation that runs significantly faster but with a slight sacrifice in accuracy.
-                Default is 'kde'.
-            model_load : str
-                Load a conformational state model from the given pickled file.
-            model_data : str
-                Fit conformational state models to data provided in the given file.
-            model_dump : str
-                Write the generated model to a pickled file, that can be loaded
-                again using `model_load`.
-            window : List[int] or int
-                Do inference using a moving reading-frame of <int> consecutive samples.
-                Multiple values can be given as a list.
-            window_series : List[int] or int
-                Do inference using a moving reading-frame of <int> consecutive samples.
-                Return the results for every window rather than the average. Multiple
-                values can be given as a list.
-            bootstrap : List[int] or int
-                Do inference using <Int> samples obtained through bootstrapping.
-                Multiple values can be given as a list.
-            bootstrap_series : List[int] or int
-                Do inference using <Int> samples obtained through bootstrapping.
-                Return the results for every subsample rather than the average. Multiple
-                values can be given as a list.
-            bootstrap_samples : int
-                When bootstrapping, sample <Int> times from the input data.
-            input_degrees : bool
-                Set `True` if input files are in degrees.
-            model_data_degrees : bool
-                Set `True` if the data given under `model_data` to is given in degrees.
-            precision : int
-                Sets the number of decimals in the output files. By default, 4 decimal.
-            kde_bandwidth : float
-                This controls the bandwidth of the Gaussian kernel density estimator.
-            grid_points : int
-                When `model_type` == 'grid', this controls how many grid points
-                are used to describe the probability density function.
-            seed : int
-                Set the random seed especially for bootstrapping."""
+		"""
 
 		logger.info(f"Setting `{parameter} = {value}`")
 		setattr(self.parameters, parameter, value)

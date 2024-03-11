@@ -41,25 +41,22 @@ class ConstavaParameters:
             Input file(s) that contain the dihedral angles.
         input_format : str
             Format of the input file. Options include:
-            - 'auto': Automatically detect the file format.
+            - 'auto': Automatically detect the file format (default).
             - 'csv': Comma-separated values format.
             - 'xvg': XVG format used by GROMACS for graphing.
-            Default is 'auto'.
         output_file : str
             The file to write the output to.
         output_format : str
             Format of the output file. Options include:
-            - 'auto': Automatically select the output format based on the input format or other criteria.
+            - 'auto': Automatically select the output format based on the input format or other criteria (default).
             - 'csv': Comma-separated values format, suitable for spreadsheets and simple data analyses.
             - 'json': JSON format, which is lightweight and easy for humans to read and write, and easy for machines
             to parse and generate.
             - 'tsv': Tab-separated values format, useful for tabular data that is less complex than CSV data.
-            Default is 'auto'.
         model_type : str
             Specifies the probabilistic conformational state model used. Options include:
-            - 'kde': Kernel Density Estimation. Provides a more accurate model at the cost of computational time.
-            - 'grid': A grid-based approximation that runs significantly faster but with a slight sacrifice in accuracy.
-            Default is 'kde'.
+            - 'kde': Kernel Density Estimator (default).
+            - 'grid': A grid-based approximation of the KDE. Runs significantly faster with minor sacrifice to accuracy.
         model_load : str
             Load a conformational state model from the given pickled file.
         model_data : str
