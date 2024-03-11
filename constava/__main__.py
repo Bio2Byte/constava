@@ -4,6 +4,8 @@ import os, sys
 import argparse
 import textwrap as tw
 from constava import Constava, ConstavaParameters, __version__
+from constava.tests.tests import run_unittest
+from constava.utils.dihedrals import calculate_dihedrals
 
 
 def parse_parameters(cmdline_arguments):
@@ -307,10 +309,8 @@ def main():
     elif args.subcommand == "analyze":
         run_analyze(args)
     elif args.subcommand == "dihedrals":
-        from constava.utils.dihedrals import calculate_dihedrals
         run_dihedrals(args)
     elif args.subcommand == "test":
-        from constava.tests.tests import run_unittest
         run_unittest()
 
 if __name__ == "__main__":
