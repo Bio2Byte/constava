@@ -40,41 +40,46 @@ class ConstavaParameters:
         input_files : List[str] or str
             Input file(s) that contain the dihedral angles.
         input_format : str
-            Format of the input file: {'auto', 'csv', 'xvg'}
+            Format of the input file. Options include:
+            - 'auto': Automatically detect the file format (default).
+            - 'csv': Comma-separated values format.
+            - 'xvg': XVG format used by GROMACS for graphing.
         output_file : str
             The file to write the output to.
         output_format : str
-            Format of output file: {'auto', 'csv', 'json', 'tsv'}
-
+            Format of the output file. Options include:
+            - 'auto': Automatically select the output format based on the input format or other criteria (default).
+            - 'csv': Comma-separated values format, suitable for spreadsheets and simple data analyses.
+            - 'json': JSON format, which is lightweight and easy for humans to read and write, and easy for machines
+            to parse and generate.
+            - 'tsv': Tab-separated values format, useful for tabular data that is less complex than CSV data.
         model_type : str
-            The probabilistic conformational state model used. Default is `kde`.
-            The alternative `grid` runs significantly faster while slightly 
-            sacrificing accuracy: {'kde', 'grid'}
+            Specifies the probabilistic conformational state model used. Options include:
+            - 'kde': Kernel Density Estimator (default).
+            - 'grid': A grid-based approximation of the KDE. Runs significantly faster with minor sacrifice to accuracy.
         model_load : str
             Load a conformational state model from the given pickled file.
         model_data : str
             Fit conformational state models to data provided in the given file.
         model_dump : str
-            Write the generated model to a pickled file, that can be loaded 
+            Write the generated model to a pickled file, that can be loaded
             again using `model_load`.
-
         window : List[int] or int
             Do inference using a moving reading-frame of <int> consecutive samples.
             Multiple values can be given as a list.
         window_series : List[int] or int
             Do inference using a moving reading-frame of <int> consecutive samples.
-            Return the results for every window rather than the average. Multiple 
+            Return the results for every window rather than the average. Multiple
             values can be given as a list.
         bootstrap : List[int] or int
             Do inference using <Int> samples obtained through bootstrapping.
             Multiple values can be given as a list.
         bootstrap_series : List[int] or int
             Do inference using <Int> samples obtained through bootstrapping.
-            Return the results for every subsample rather than the average. Multiple 
+            Return the results for every subsample rather than the average. Multiple
             values can be given as a list.
         bootstrap_samples : int
             When bootstrapping, sample <Int> times from the input data.
-
         input_degrees : bool
             Set `True` if input files are in degrees.
         model_data_degrees : bool

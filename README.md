@@ -76,7 +76,6 @@ We recommend this installation for most users.
   ```
   pip install constava
   ```
-  (Takes about 1 minute)
 
 If the package requires to be uninstalled, run `pip uninstall constava`. 
 
@@ -124,7 +123,7 @@ We provide a couple of usage examples in a [Colab notebook](https://colab.resear
 
 ### Execution from the command line
 
-The software is subdevided in **three submodules**:
+The software is subdivided in **three submodules**:
 
 The `constava dihedrals` submodule provides a simple way to extract backbone 
 dihedral angles from MD simulations or PDB ensembles. For more information
@@ -516,8 +515,7 @@ https://orcid.org/0000-0002-4313-3845) -
 - Wim Vranken - 
 [![ORCID](https://orcid.org/sites/default/files/images/orcid_16x16.png)](https://orcid.org/0000-0001-7470-4324) - 
 [Personal page](https://researchportal.vub.be/en/persons/wim-vranken) - 
-[wim.
-  vranken@vub.be](mailto:wim.vranken@vub.be)
+[wim.vranken@vub.be](mailto:wim.vranken@vub.be)
 
 <sup>&spades;</sup> Authors contributed equally to this work.
 
