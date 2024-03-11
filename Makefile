@@ -8,6 +8,9 @@ build:
 install:
 	pip install dist/$(PACKAGE_NAME)-*.tar.gz
 
+test:
+	python -m $(PACKAGE_NAME) test
+
 uninstall:
 	-pip uninstall -y $(PACKAGE_NAME)
 
