@@ -4,6 +4,7 @@ import os, sys
 import argparse
 import textwrap as tw
 from constava import Constava, ConstavaParameters, __version__
+from constava.tests.tests import run_unittest
 from constava.utils.dihedrals import calculate_dihedrals
 
 
@@ -60,11 +61,11 @@ def parse_parameters(cmdline_arguments):
         fit-model
             Fit a custom conformational state model
         analyze
-            Analyze a conformational ensemble using a 
-            conformational state model
+            Analyze a conformational ensemble using a conformational state model
         dihedrals
-            Obtain the phi/psi backbone dihedral angles from a MD 
-            simulation"""))
+            Obtain the phi/psi backbone dihedral angles from a MD simulation
+        test
+            Run unit tests of the installed package"""))
 
     # ======================
     #  Subparser: fit-model
@@ -239,6 +240,16 @@ def parse_parameters(cmdline_arguments):
     dihMisc.add_argument("-O", "--overwrite", action="store_true",
         help="If set any previously generated output will be overwritten.")
 
+    # ======================
+    #  Subparser: test
+    # ======================
+    parser_test = subparsers.add_parser("test", description=tw.dedent(
+        """\
+        The `constava test` submodule runs a couple of test cases to check, if 
+        consistent results are achieved. This should be done once after 
+        installation and takes about a minute."""),
+        formatter_class=argparse.RawTextHelpFormatter)
+
     # Parse command line arguments
     return parser.parse_args(cmdline_arguments)
 
@@ -299,6 +310,8 @@ def main():
         run_analyze(args)
     elif args.subcommand == "dihedrals":
         run_dihedrals(args)
+    elif args.subcommand == "test":
+        run_unittest()
 
 if __name__ == "__main__":
     sys.exit(main())
