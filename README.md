@@ -1,3 +1,9 @@
+[![DOI](https://zenodo.org/badge/756268318.svg)](https://zenodo.org/badge/latestdoi/756268318)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/constava)](https://pypi.org/project/constava/)
+[![PyPI - Version](https://img.shields.io/pypi/v/constava)](https://pypi.org/project/constava/)
+[![Anaconda - Version](https://anaconda.org/bioconda/constava/badges/version.svg)](https://anaconda.org/bioconda/constava)
+[![License](https://anaconda.org/bioconda/constava/badges/license.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+
 <!-- PROJECT LOGO -->
 <br /> 
 <div align="center">
