@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="constava",
-    version="1.1.1",
+    version="1.1.2",
     author="Wim Vranken",
     author_email="wim.vranken@vub.be",
     description="This software is used to calculate conformational states probability & conformational state "
