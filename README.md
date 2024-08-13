@@ -37,6 +37,7 @@
     * [Generating and loading conformational state models](#generating-and-loading-conformational-state-models)
     * [Constava-class parameters vs. command line arguments](#constava-class-parameters-vs-command-line-arguments)
 * [License](#license)
+* [Citation](#citation)
 * [Authors](#authors)
 * [Acknowledgements](#acknowledgments)
 * [Contact](#contact)
@@ -579,6 +580,10 @@ parameters in Python and command line are the same.
 Distributed under the GNU General Public License v3 (GPLv3) License.
 
 [<Go to top>](#constava)
+
+## Citation
+
+> Gavalda-Garcia, J., Bickel, D., Roca-Martinez, J., Raimondi, D., Orlando, G., & Vranken, W. (2024). *Data-driven probabilistic definition of the low energy conformational states of protein residues*. NAR Genomics and Bioinformatics, 6(3), lqae082. [https://doi.org/10.1093/nargab/lqae082](https://doi.org/10.1093/nargab/lqae082)
 
 ## Authors
 
