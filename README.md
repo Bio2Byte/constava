@@ -141,6 +141,16 @@ from the package's root directory.
 
 [<Go to top>](#constava)
 
+### Troubleshooting
+
+#### Libtiff issues
+
+If you run `constava` and see an error related to the library `libtiff` such as `libtiff.5.dylib' (no such file)`, you can try to fix it by installing `libtiff`. For instance, using conda: 
+
+```sh
+conda install libtiff
+```
+
 ## Running constava from a container (Docker)
 
 ### Using constava as a command line tool inside a Docker container
