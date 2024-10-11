@@ -95,7 +95,7 @@ If the package requires to be uninstalled, run `pip uninstall constava`.
 
 ### Installation through conda
 
-To install constava through conda please follow the instructions below.
+To install constava through conda please follow the instructions below (both [Conda-Forge](https://conda-forge.org) and [Bioconda](https://bioconda.github.io) channels are required to install Constava dependencies).
 
 ```sh
 # Create a conda environment (optional but recommended):
@@ -103,7 +103,7 @@ conda create -n constava python=3.12
 conde activate constava
 
 # Install constava
-conda install -c bioconda constava
+conda install -c bioconda -c conda-forge constava
 
 # Run tests to ensure the successful installation (optional but recommended):
 constava test
