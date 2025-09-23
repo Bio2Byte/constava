@@ -1,0 +1,62 @@
+{
+    "@context": {
+        "schema": "https://schema.org/",
+        "bs": "https://bioschemas.org/terms/",
+        "codemeta": "https://w3id.org/codemeta/",
+        "rdf": "https://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs": "https://www.w3.org/2000/01/rdf-schema#",
+        "maSMP": "https://discovery.biothings.io/view/maSMP/"
+    },
+    "@type": "schema:SoftwareApplication",
+    "schema:name": "constava",
+    "@id": "https://openebench.bsc.es/bioschemas/tools/observatory:constava:v1.1.0/",
+    "schema:description": "Constava analyzes conformational ensembles calculating conformational state propensities and conformational state variability.",
+    "schema:license": [
+        {
+            "@type": "schema:CreativeWork",
+            "schema:name": "Other",
+            "schema:url": "http://choosealicense.com/licenses/other/"
+        }
+    ],
+    "schema:author": [
+        {
+            "@type": "schema:Person",
+            "schema:name": "Adrián Diaz",
+            "schema:email": "diaz.adrian.g@gmail.com"
+        },
+        {
+            "@type": "schema:Person",
+            "schema:name": "David Bickel",
+            "schema:email": "david.bickel@vub.be"
+        },
+        {
+            "@type": "schema:Person",
+            "schema:name": "David Bickel",
+            "schema:email": "108419422+aethertier@users.noreply.github.com"
+        },
+        {
+            "@type": "schema:Person",
+            "schema:name": "Jose Gavaldá-García",
+            "schema:email": "jose.gavalda.garcia@vub.be"
+        },
+        {
+            "@type": "schema:Person",
+            "schema:name": "Adrián Diaz",
+            "schema:email": "adrian.diaz@vub.be"
+        }
+    ],
+    "schema:softwareVersion": "v1.1.0",
+    "schema:codeRepository": [
+        "https://github.com/Bio2Byte/constava"
+    ],
+    "schema:softwareHelp": [
+        {
+            "@id": "https://github.com/bio2byte/constava/blob/main/README.md"
+        },
+        {
+            "@id": "https://github.com/bio2byte/constava/blob/main/requirements.txt"
+        }
+    ],
+    "schema:dateModified": "2025-09-23T10:56:14Z",
+    "codemeta:readme": "https://github.com/bio2byte/constava/blob/main/README.md"
+}
