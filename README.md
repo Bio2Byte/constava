@@ -237,7 +237,7 @@ and infers the propensities for each residue to reside in a given
 conformational state. For more information run: `constava analyze -h`.
 
 The `constava fit-model` can be used to train a custom probabilistic model of
-confromational states.  The default models were derived from an analysis of NMR
+conformational states.  The default models were derived from an analysis of NMR
 ensembles and chemical shifts; they cover six conformational states:
 
 * Core Helix - Exclusively alpha-helical, low backbone dynamics
@@ -258,7 +258,7 @@ is used.
 usage: constava dihedrals [-h] [-s <file.pdb>] [-f <file.xtc> [<file.xtc> ...]] [-o OUTPUT] [--selection SELECTION] [--precision PRECISION] [--degrees] [-O]
 
 The `constava dihedrals` submodule is used to extract the backbone dihedrals
-needed for the analysis from confromational ensembles. By default the results
+needed for the analysis from conformational ensembles. By default the results
 are written out in radians as this is the preferred format for
 `constava analyze`.
 
@@ -296,7 +296,7 @@ constava dihedrals -O -s "2mkx.gro" -f "2mkx.xtc" -o "2mkx_dihedrals.csv"
 
 #### Analyzing a conformational ensemble
 
-To analyze the backbone dihedral angles extracted from a confromational ensemble,
+To analyze the backbone dihedral angles extracted from a conformational ensemble,
 the `constava analyze` submodule is used.
 
 ```
@@ -384,7 +384,7 @@ constava analyze \
 
 #### Generating custom conformational state models
 
-To  train a custom probabilistic model of confromational states, the `constava fit-model` 
+To  train a custom probabilistic model of conformational states, the `constava fit-model` 
 submodule is used. 
 
 ```
@@ -535,7 +535,7 @@ csmodel = c.fit_csmodel(model_type = "grid",
 # Write the fitted model out as a pickle
 csmodel.dump_pickle("grid_model.pkl")
 
-# Use the new model to analyze a confromational ensemble
+# Use the new model to analyze a conformational ensemble
 PDBID = "2mkx"
 input_files = glob.glob(f"./{PDBID}_dihedrals.csv")
 output_file = f"./{PDBID}_constava.csv"
