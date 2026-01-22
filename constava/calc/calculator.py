@@ -93,10 +93,9 @@ class ConfStateCalculator:
 
         residues = list(ensemble.get_residues())
         n_residues = ensemble.n_residues
-        logger.debug(f"Calculating the state propensities and variability for each residue ({n_residues}) for each method ({len(self.methods)} methods)...")
 
         logpdf_workers = min(n_residues, multiprocessing.cpu_count())
-        logger.debug(f"Calculating log-probability densities of ({n_residues}) residues using {logpdf_workers} process workers ...")
+        logger.debug(f"Calculating log-probability densities of ({n_residues}) residues using {logpdf_workers} process workers...")
 
         logpdfs = [None] * n_residues
         
@@ -110,14 +109,15 @@ class ConfStateCalculator:
                     executor.submit(_compute_logpdf_worker, residue.phipsi): idx
                     for idx, residue in enumerate(residues)
                 }
+                
                 for future in as_completed(futures):
                     idx = futures[future]
                     logpdfs[idx] = future.result()
                     pbar.update(1)
 
-        logger.debug("Finished computing log-probability densities, aggregating per-method results...")
+        logger.debug(f"Calculating the state propensities and variability for each residue ({n_residues}) using the {len(self.methods)} available methods...")
 
-        for res, logpdf in tqdm.tqdm(zip(residues, logpdfs), total=n_residues, unit='residues'):
+        for res, logpdf in zip(residues, logpdfs):
             for method, result in zip(self.methods, results):
                 state_propensities, state_variability = method.calculate(logpdf)
 
