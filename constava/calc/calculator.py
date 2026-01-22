@@ -3,6 +3,7 @@ conformational state propensities and conformational state variability from
 a protein ensemble
 """
 
+import logging
 from typing import List
 import tqdm
 from .subsampling import SubsamplingABC, SubsamplingMethodError
@@ -10,6 +11,8 @@ from .csmodels import ConfStateModelABC
 from ..utils.ensembles import ProteinEnsemble
 from ..utils.results import ConstavaResults, ConstavaResultsEntry
 
+# The logger for the wrapper
+logger = logging.getLogger("Constava")
 
 def check_subsampling_methods(func):
     """Decorator for ConfStateCalculator that checks, if appropriate subsampling
@@ -64,19 +67,29 @@ class ConfStateCalculator:
                 A list of ConstavaResults, each representing the same 
                 ProteinEnsemble but calculated with one or more subsampling methods.
         """
+        
+        logger.debug(f"Instantiating Constava results for each method ({len(self.methods)} methods)...")
+        
         results = [
             ConstavaResults(method = method.getShortName(), protein = ensemble, 
                             state_labels = self.csmodels.get_labels()) 
             for method in self.methods
         ]
 
-        for res in tqdm.tqdm(ensemble.get_residues(), total=ensemble.n_residues, unit='residues'):
-            logpdf = self.csmodels.get_logpdf(res.phipsi)
+        logger.debug(f"Calculating the state propensities and variability for each residue ({ensemble.n_residues}) for each method ({len(self.methods)} methods)...")
 
+        for res in tqdm.tqdm(ensemble.get_residues(), total=ensemble.n_residues, unit='residues'):
+            # Memoisation candidate
+            logpdf = self.csmodels.get_logpdf(res.phipsi)
+            
+            # Parallelisation candidate per method
             for method, result in zip(self.methods, results):
+                # Memoisation candidate
                 state_propensities, state_variability = method.calculate(logpdf)
+                
                 result.add_entry(ConstavaResultsEntry(
                     res, state_propensities, state_variability))
-                
+        
+        logger.debug(f"Returning the state propensities and variability results ({len(results)} results)...")  
+        
         return results
-

@@ -49,8 +49,10 @@ class SubsamplingABC(metaclass=abc.ABCMeta):
             
         """
         subsampled_pdf = self._subsampling(state_logpdfs)
+        
         state_propensities = self.calculateStatePropensities(subsampled_pdf)
         state_variability  = self.calculateStateVariability(subsampled_pdf)
+        
         return state_propensities, state_variability
 
     def calculateStatePropensities(self, state_likelihoods):
