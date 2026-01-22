@@ -3,9 +3,9 @@ conformational state propensities and conformational state variability from
 a protein ensemble
 """
 
+from collections import defaultdict
 import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import multiprocessing
 from typing import List
 import tqdm
 from .subsampling import SubsamplingABC, SubsamplingMethodError
@@ -30,7 +30,7 @@ def _compute_logpdf_worker(phipsi):
     """Worker function executed in separate processes to compute logpdf."""
     logpdf = _LOGPDF_WORKER_CSMODEL.get_logpdf(phipsi)
     
-    result = { "logpdf": logpdf }
+    result = dict()
     
     for method in _LOGPDF_WORKER_METHODS:
         state_propensities, state_variability = method.calculate(logpdf)
@@ -109,14 +109,12 @@ class ConfStateCalculator:
 
         residues = list(ensemble.get_residues())
         n_residues = ensemble.n_residues
-        logpdf_workers = min(4, multiprocessing.cpu_count())
-        logpdf_results = {}
 
+        logpdf_results = [None] * n_residues
+        
         with tqdm.tqdm(total=n_residues, unit="residue") as pbar:
             with ProcessPoolExecutor(
-                max_workers=logpdf_workers,
-                initializer=_init_logpdf_worker,
-                initargs=(self.csmodels, self.methods)
+                initializer=_init_logpdf_worker, initargs=(self.csmodels, self.methods)
             ) as executor:
                 futures = {
                     executor.submit(_compute_logpdf_worker, residue.phipsi): idx
@@ -126,9 +124,10 @@ class ConfStateCalculator:
                 for future in as_completed(futures):
                     idx = futures[future]
                     logpdf_results[idx] = future.result()
+                    
                     pbar.update(1)
 
-        for idx, res in enumerate(residues):
+        for idx, residue in enumerate(residues):
             res_logpdf_results = logpdf_results[idx]
 
             for result in results:
@@ -136,7 +135,7 @@ class ConfStateCalculator:
                 
                 result.add_entry(
                     ConstavaResultsEntry(
-                        res,
+                        residue,
                         res_logpdf_results[current_method]["state_propensities"], 
                         res_logpdf_results[current_method]["state_variability"]
                     )
