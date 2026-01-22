@@ -3,8 +3,8 @@ conformational state propensities and conformational state variability from
 a protein ensemble
 """
 
-import concurrent
 import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List
 import tqdm
 from .subsampling import SubsamplingABC, SubsamplingMethodError
@@ -14,6 +14,17 @@ from ..utils.results import ConstavaResults, ConstavaResultsEntry
 
 # The logger for the wrapper
 logger = logging.getLogger("Constava")
+
+_LOGPDF_WORKER_CSMODEL = None
+
+def _init_logpdf_worker(csmodel: ConfStateModelABC):
+    """Initializer to share the conformational state model with worker processes."""
+    global _LOGPDF_WORKER_CSMODEL
+    _LOGPDF_WORKER_CSMODEL = csmodel
+
+def _compute_logpdf_worker(phipsi):
+    """Worker function executed in separate processes to compute logpdf."""
+    return _LOGPDF_WORKER_CSMODEL.get_logpdf(phipsi)
 
 def check_subsampling_methods(func):
     """Decorator for ConfStateCalculator that checks, if appropriate subsampling
@@ -70,35 +81,47 @@ class ConfStateCalculator:
         """
         
         logger.debug(f"Instantiating Constava results for each method ({len(self.methods)} methods)...")
-        
-        results = [ConstavaResults(method = method.getShortName(), protein = ensemble, state_labels = self.csmodels.get_labels())  for method in self.methods]
+        results = [
+            ConstavaResults(
+                method=method.getShortName(),
+                protein=ensemble,
+                state_labels=self.csmodels.get_labels()
+            )
+            for method in self.methods
+        ]
 
-        logger.debug(f"Calculating the state propensities and variability for each residue ({ensemble.n_residues}) for each method ({len(self.methods)} methods)...")
+        residues = list(ensemble.get_residues())
+        logger.debug(f"Calculating the state propensities and variability for each residue ({len(residues)}) for each method ({len(self.methods)} methods)...")
+
+        logpdf_workers = min(len(residues), 8) or 1
+        logger.debug(f"Calculating log-probability densities of ({len(residues)}) residues using {logpdf_workers} process workers ...")
+
+        logpdfs = [None] * len(residues)
         
-        logpdf_workers = min(ensemble.n_residues, 8) or 1
-        logger.debug(f"Calculating log-probability densities of ({ensemble.n_residues}) using {logpdf_workers} max parallel workers ...")
-        
-        with tqdm.tqdm(total=ensemble.n_residues, unit="residue") as pbar:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=logpdf_workers) as executor:
-                futures = { executor.submit(self._compute_logpdf, res): res for res in ensemble.get_residues() }
-                
-                for _future in concurrent.futures.as_completed(futures):
+        with tqdm.tqdm(total=len(residues), unit="residue") as pbar:
+            with ProcessPoolExecutor(
+                max_workers=logpdf_workers,
+                initializer=_init_logpdf_worker,
+                initargs=(self.csmodels,)
+            ) as executor:
+                futures = {
+                    executor.submit(_compute_logpdf_worker, residue.phipsi): idx
+                    for idx, residue in enumerate(residues)
+                }
+                for future in as_completed(futures):
+                    idx = futures[future]
+                    logpdfs[idx] = future.result()
                     pbar.update(1)
-                    
-        for res in tqdm.tqdm(ensemble.get_residues(), total=ensemble.n_residues, unit='residues'):
+
+        logger.debug("Finished computing log-probability densities, aggregating per-method results...")
+
+        for res, logpdf in tqdm.tqdm(zip(residues, logpdfs), total=len(residues), unit='residues'):
             for method, result in zip(self.methods, results):
-                state_propensities, state_variability = method.calculate(res.logpdf)
-                
+                state_propensities, state_variability = method.calculate(logpdf)
+
                 result.add_entry(ConstavaResultsEntry(
                     res, state_propensities, state_variability))
         
         logger.debug(f"Returning the state propensities and variability results ({len(results)} results)...")  
         
         return results
-
-    def _compute_logpdf(self, residue):
-        logpdf = self.csmodels.get_logpdf(residue.phipsi)
-        
-        residue.logpdf = logpdf
-
-        return logpdf
