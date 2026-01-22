@@ -3,6 +3,7 @@ conformational state propensities and conformational state variability from
 a protein ensemble
 """
 
+import concurrent
 import logging
 from typing import List
 import tqdm
@@ -70,22 +71,23 @@ class ConfStateCalculator:
         
         logger.debug(f"Instantiating Constava results for each method ({len(self.methods)} methods)...")
         
-        results = [
-            ConstavaResults(method = method.getShortName(), protein = ensemble, 
-                            state_labels = self.csmodels.get_labels()) 
-            for method in self.methods
-        ]
+        results = [ConstavaResults(method = method.getShortName(), protein = ensemble, state_labels = self.csmodels.get_labels())  for method in self.methods]
 
         logger.debug(f"Calculating the state propensities and variability for each residue ({ensemble.n_residues}) for each method ({len(self.methods)} methods)...")
-
+        
+        logpdf_workers = min(ensemble.n_residues, 8) or 1
+        logger.debug(f"Calculating log-probability densities of ({ensemble.n_residues}) using {logpdf_workers} max parallel workers ...")
+        
+        with tqdm.tqdm(total=ensemble.n_residues, unit="residue") as pbar:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=logpdf_workers) as executor:
+                futures = { executor.submit(self._compute_logpdf, res): res for res in ensemble.get_residues() }
+                
+                for _future in concurrent.futures.as_completed(futures):
+                    pbar.update(1)
+                    
         for res in tqdm.tqdm(ensemble.get_residues(), total=ensemble.n_residues, unit='residues'):
-            # Memoisation candidate
-            logpdf = self.csmodels.get_logpdf(res.phipsi)
-            
-            # Parallelisation candidate per method
             for method, result in zip(self.methods, results):
-                # Memoisation candidate
-                state_propensities, state_variability = method.calculate(logpdf)
+                state_propensities, state_variability = method.calculate(res.logpdf)
                 
                 result.add_entry(ConstavaResultsEntry(
                     res, state_propensities, state_variability))
@@ -93,3 +95,10 @@ class ConfStateCalculator:
         logger.debug(f"Returning the state propensities and variability results ({len(results)} results)...")  
         
         return results
+
+    def _compute_logpdf(self, residue):
+        logpdf = self.csmodels.get_logpdf(residue.phipsi)
+        
+        residue.logpdf = logpdf
+
+        return logpdf

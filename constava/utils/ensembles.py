@@ -26,13 +26,14 @@ class ResidueEnsemble:
         phipsi: array[N,2]      Array of the phi/psi angles of the residue
                                 for all conformations in the ensemble
         proteinensemble: ProteinEnsemble
-                                Refernece to the ProteinEnsemble-object, the 
+                                Reference to the ProteinEnsemble-object, the 
                                 residue belongs to.
     """
     restype: str = ""
     respos: int = None
     phipsi: np.ndarray = None
     protein = None
+    logpdf = None
 
     @property
     def restype1(self):
@@ -131,4 +132,3 @@ class ProteinEnsemble:
             "residues": [res.to_dict() for res in self.get_residues()]
         }
         return _data
-
