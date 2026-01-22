@@ -33,7 +33,6 @@ class ResidueEnsemble:
     respos: int = None
     phipsi: np.ndarray = None
     protein = None
-    logpdf = None
 
     @property
     def restype1(self):

@@ -5,6 +5,7 @@ a protein ensemble
 
 import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing
 from typing import List
 import tqdm
 from .subsampling import SubsamplingABC, SubsamplingMethodError
@@ -91,14 +92,15 @@ class ConfStateCalculator:
         ]
 
         residues = list(ensemble.get_residues())
-        logger.debug(f"Calculating the state propensities and variability for each residue ({len(residues)}) for each method ({len(self.methods)} methods)...")
+        n_residues = ensemble.n_residues
+        logger.debug(f"Calculating the state propensities and variability for each residue ({n_residues}) for each method ({len(self.methods)} methods)...")
 
-        logpdf_workers = min(len(residues), 8) or 1
-        logger.debug(f"Calculating log-probability densities of ({len(residues)}) residues using {logpdf_workers} process workers ...")
+        logpdf_workers = min(n_residues, multiprocessing.cpu_count())
+        logger.debug(f"Calculating log-probability densities of ({n_residues}) residues using {logpdf_workers} process workers ...")
 
-        logpdfs = [None] * len(residues)
+        logpdfs = [None] * n_residues
         
-        with tqdm.tqdm(total=len(residues), unit="residue") as pbar:
+        with tqdm.tqdm(total=n_residues, unit="residue") as pbar:
             with ProcessPoolExecutor(
                 max_workers=logpdf_workers,
                 initializer=_init_logpdf_worker,
@@ -115,12 +117,13 @@ class ConfStateCalculator:
 
         logger.debug("Finished computing log-probability densities, aggregating per-method results...")
 
-        for res, logpdf in tqdm.tqdm(zip(residues, logpdfs), total=len(residues), unit='residues'):
+        for res, logpdf in tqdm.tqdm(zip(residues, logpdfs), total=n_residues, unit='residues'):
             for method, result in zip(self.methods, results):
                 state_propensities, state_variability = method.calculate(logpdf)
 
-                result.add_entry(ConstavaResultsEntry(
-                    res, state_propensities, state_variability))
+                result.add_entry(
+                    ConstavaResultsEntry(res, state_propensities, state_variability)
+                )
         
         logger.debug(f"Returning the state propensities and variability results ({len(results)} results)...")  
         
