@@ -168,6 +168,9 @@ class SubsamplingWindow(SubsamplingABC):
         pdf = np.exp(logpdf)
         pdf /= np.sum(pdf, axis=0)
         return pdf
+    
+    def __str__(self):
+        return "SubsamplingWindow"
 
 
 class SubsamplingBootstrap(SubsamplingABC):
@@ -256,6 +259,10 @@ class SubsamplingBootstrap(SubsamplingABC):
         pdf = np.exp(logpdf)
         pdf /= np.sum(pdf, axis=0)
         return pdf
+    
+    def __str__(self):
+        return "SubsamplingBootstrap"
+
 
 
 class SubsamplingWindowSeries(SubsamplingWindow):
