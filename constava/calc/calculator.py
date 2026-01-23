@@ -102,19 +102,9 @@ class ConfStateCalculator:
                 ProteinEnsemble but calculated with one or more subsampling methods.
         """
 
-        logger.debug(f"Instantiating Constava results for each method ({len(self.methods)} methods)...")
-        results = [
-            ConstavaResults(
-                method=method.getShortName(),
-                protein=ensemble,
-                state_labels=self.csmodels.get_labels()
-            )
-            for method in self.methods
-        ]
-
         n_residues = ensemble.n_residues
 
-        logpdf_results = np.empty(
+        logpdf_state_propens_variabs = np.empty(
             (n_residues, len(self.methods), len(self.csmodels.get_labels()) + 1)
         )
 
@@ -122,8 +112,11 @@ class ConfStateCalculator:
             max_workers = os.process_cpu_count()
         except AttributeError:
             max_workers = multiprocessing.cpu_count()
+        
+        if max_workers > 2:
+            max_workers = max_workers - 1
 
-        max_in_flight = max_workers * 3
+        max_in_flight = max_workers * 2
         future_to_idx = defaultdict()
         
         logger.debug(f"Starting inference of log-probability densities & propens/var")
@@ -133,7 +126,6 @@ class ConfStateCalculator:
             initializer=_init_self_worker,
             initargs=(self.csmodels, self.methods)
         ) as process_pool_executor:
-
             it = iter(enumerate(ensemble.get_residues()))
             in_flight = set()
             
@@ -166,7 +158,7 @@ class ConfStateCalculator:
 
                         for fut in done:
                             idx = future_to_idx.pop(fut)
-                            logpdf_results[idx] = fut.result()
+                            logpdf_state_propens_variabs[idx] = fut.result()
 
                             progress_bar.update(1)
                             completed += 1
@@ -182,28 +174,30 @@ class ConfStateCalculator:
                                 _self_compute_logpdf_worker, phi_psi_angles
                             )
                             
-                            # logger.debug(f"Parallel task submitted ({idx}: {residue})")
-                            
                             future_to_idx[nfut] = idx
                             
                             in_flight.add(nfut)
 
-        logger.debug("Building the results objects...")
-        for idx, residue in enumerate(ensemble.get_residues()):
-            res_logpdf_results = logpdf_results[idx]
+        logger.debug(f"Building results for the {len(self.methods)} methods...")
+        
+        results = [
+            ConstavaResults(
+                method=method.getShortName(),
+                protein=ensemble,
+                state_labels=self.csmodels.get_labels()
+            )
+            for method in self.methods
+        ]
 
+        for idx, residue in enumerate(ensemble.get_residues()):
             for result_idx, result in enumerate(results):
-                state_propensities = res_logpdf_results[result_idx][:-1]
-                state_variability = res_logpdf_results[result_idx][-1]
+                state_propensities = logpdf_state_propens_variabs[idx][result_idx][:-1]
+                state_variability  = logpdf_state_propens_variabs[idx][result_idx][-1]
 
                 result.add_entry(
-                    ConstavaResultsEntry(
-                        residue,
-                        state_propensities,
-                        state_variability
-                    )
+                    ConstavaResultsEntry(residue, state_propensities, state_variability)
                 )
 
-        logger.debug("All the calculations have been done with success!")
+        logger.debug("All the results have been calculated with success!")
 
         return results
