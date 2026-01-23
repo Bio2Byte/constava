@@ -95,10 +95,10 @@ class DihedralCsvReader(ReaderABC):
         unique_residues = data[["ResIndex", "ResName"]].drop_duplicates(inplace=False)
         residue_list = []
         for i, (resid, resname) in unique_residues.iterrows():
-            phipsi = data.loc[(data["ResIndex"] == resid) & (data["ResName"] == resname), [phicol, psicol]].to_numpy(dtype=np.float32, copy=False)
+            phipsi = data.loc[(data["ResIndex"] == resid) & (data["ResName"] == resname), [phicol, psicol]].to_numpy()
             
             if self.degrees:
-                phipsi = np.radians(phipsi, dtype=np.float32)
+                phipsi = np.radians(phipsi)
             
             check_dihedral_range(phipsi) # Throws errors/warnings if data is not in radians
             residue_list.append(
@@ -171,10 +171,10 @@ class GmxChiReader(ReaderABC):
                     f"File does not match the structure of `gmx chi` outputs: {filename}"))
             restype = m.group(1)
             respos = int(m.group(2))
-            phipsi = np.loadtxt(infile, comments=["#", "@"], dtype=np.float32, copy=False)
+            phipsi = np.loadtxt(infile, comments=["#", "@"])
             
             if self.degrees:
-                phipsi = np.radians(phipsi, dtype=np.float32)
+                phipsi = np.radians(phipsi)
                 
             check_dihedral_range(phipsi) # Throws errors/warnings if data is not in radians
             

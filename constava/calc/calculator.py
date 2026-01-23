@@ -3,6 +3,7 @@ conformational state propensities and conformational state variability from
 a protein ensemble
 """
 
+from collections import defaultdict
 import os
 import multiprocessing
 import logging
@@ -11,6 +12,7 @@ from typing import List
 import numpy as np
 
 import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 from .subsampling import SubsamplingABC, SubsamplingMethodError
 from .csmodels import ConfStateModelABC
 from ..utils.ensembles import ProteinEnsemble
@@ -19,21 +21,31 @@ from ..utils.results import ConstavaResults, ConstavaResultsEntry
 # The logger for the wrapper
 logger = logging.getLogger("Constava")
 
-def _self_compute_logpdf_worker(phipsi: np.ndarray, csmodel: ConfStateModelABC, methods: List[SubsamplingABC]):
-    """Worker function executed in separate processes to compute logpdf."""
+_SELF_WORKER_CSMODEL = None
+_SELF_WORKER_METHODS = None
+
+def _init_self_worker(csmodels, methods):
+    global _SELF_WORKER_CSMODEL, _SELF_WORKER_METHODS
+    _SELF_WORKER_CSMODEL = csmodels
+    _SELF_WORKER_METHODS = methods
+
+def _self_compute_logpdf_worker(phipsi: np.ndarray):
+    csmodel = _SELF_WORKER_CSMODEL
+    methods = _SELF_WORKER_METHODS
+
     logpdf = csmodel.get_logpdf(phipsi)
-    
-    result = dict()
-    
-    for method in methods:
+
+    n_methods = len(methods)
+    n_states = len(csmodel.get_labels())
+
+    matrix_results = np.empty((n_methods, n_states + 1))
+
+    for method_idx, method in enumerate(methods):
         state_propensities, state_variability = method.calculate(logpdf)
+        matrix_results[method_idx, :n_states] = state_propensities
+        matrix_results[method_idx, n_states] = state_variability
 
-        result[method.getShortName()] = { 
-            "state_propensities": state_propensities, 
-            "state_variability": state_variability 
-        }
-
-    return result
+    return matrix_results
 
 
 def check_subsampling_methods(func):
@@ -100,75 +112,98 @@ class ConfStateCalculator:
             for method in self.methods
         ]
 
-        residues = list(ensemble.get_residues())
         n_residues = ensemble.n_residues
 
-        logpdf_results = [None] * n_residues
-        # import ipdb; ipdb.set_trace()
-        
+        logpdf_results = np.empty(
+            (n_residues, len(self.methods), len(self.csmodels.get_labels()) + 1)
+        )
+
         try:
             max_workers = os.process_cpu_count()
         except AttributeError:
             max_workers = multiprocessing.cpu_count()
 
-        max_in_flight = max_workers * 4  # tweak: 1–4x workers is usually sane
+        max_in_flight = max_workers * 3
+        future_to_idx = defaultdict()
         
-        logger.debug(f"Starting the parallel inference of log-probability densities and calculations for propensities & variability...")
-        with ProcessPoolExecutor(max_workers=max_workers) as ex:    
-            it = iter(enumerate(residues))
+        logger.debug(f"Starting inference of log-probability densities & propens/var")
+        
+        with ProcessPoolExecutor(
+            max_workers=max_workers,
+            initializer=_init_self_worker,
+            initargs=(self.csmodels, self.methods)
+        ) as process_pool_executor:
+
+            it = iter(enumerate(ensemble.get_residues()))
             in_flight = set()
             
-            logger.debug(f"Process Pool Executor is ready to start: max_in_flight={max_in_flight}, max_workers={max_workers}")
-            
-            with tqdm.tqdm(total=n_residues, unit="residue") as progress_bar:                
-                
-                # Prime the pipeline
-                for _ in range(min(max_in_flight, n_residues)):
-                    idx, residue = next(it)
-                    phipsi = np.ascontiguousarray(residue.phipsi, dtype=np.float32)
-                    
-                    fut = ex.submit(_self_compute_logpdf_worker, phipsi, self.csmodels, self.methods)
-                    
-                    fut.idx = idx  # attach index (simple and cheap)
-                    in_flight.add(fut)
+            logger.debug(f"Max_in_flight={max_in_flight}, Max_workers={max_workers}")
 
-                completed = 0
-                while in_flight:
-                    done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
-                    
-                    for fut in done:
-                        idx = fut.idx
-                        logpdf_results[idx] = fut.result()
-                        
-                        progress_bar.update(1)
-                        completed += 1
+            with tqdm.tqdm(
+                total=n_residues, 
+                desc="Residues", 
+                unit="residue",
+                bar_format="{l_bar}{bar} | {n_fmt}/{total_fmt} "
+               "[{rate_fmt}, elapsed: {elapsed}, remaining: {remaining}]",
+            ) as progress_bar:
+                with logging_redirect_tqdm():
+                    # Prime the pipeline
+                    for _ in range(min(max_in_flight, n_residues)):
+                        idx, residue = next(it)
+                        phi_psi_angles = np.ascontiguousarray(residue.phipsi)
 
-                        # refill
-                        try:
-                            idx, residue = next(it)
-                        except StopIteration:
-                            continue
-                        
-                        phipsi = np.ascontiguousarray(residue.phipsi, dtype=np.float32)
-                        
-                        nfut = ex.submit(_self_compute_logpdf_worker, phipsi, self.csmodels, self.methods)
-                        
-                        nfut.idx = idx
-                        in_flight.add(nfut)
+                        fut = process_pool_executor.submit(
+                            _self_compute_logpdf_worker, phi_psi_angles
+                        )
+                            
+                        future_to_idx[fut] = idx
 
-        logger.debug(f"Building the results objects...")
-        for idx, residue in enumerate(residues):
+                        in_flight.add(fut)
+
+                    completed = 0
+                    while in_flight:
+                        done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
+
+                        for fut in done:
+                            idx = future_to_idx.pop(fut)
+                            logpdf_results[idx] = fut.result()
+
+                            progress_bar.update(1)
+                            completed += 1
+
+                            # refill
+                            try:
+                                idx, residue = next(it)
+                                phi_psi_angles = np.ascontiguousarray(residue.phipsi)
+                            except StopIteration:
+                                continue
+
+                            nfut = process_pool_executor.submit(
+                                _self_compute_logpdf_worker, phi_psi_angles
+                            )
+                            
+                            # logger.debug(f"Parallel task submitted ({idx}: {residue})")
+                            
+                            future_to_idx[nfut] = idx
+                            
+                            in_flight.add(nfut)
+
+        logger.debug("Building the results objects...")
+        for idx, residue in enumerate(ensemble.get_residues()):
             res_logpdf_results = logpdf_results[idx]
 
-            for result in results:
-                current_method = result.method
-                
+            for result_idx, result in enumerate(results):
+                state_propensities = res_logpdf_results[result_idx][:-1]
+                state_variability = res_logpdf_results[result_idx][-1]
+
                 result.add_entry(
                     ConstavaResultsEntry(
                         residue,
-                        res_logpdf_results[current_method]["state_propensities"], 
-                        res_logpdf_results[current_method]["state_variability"]
+                        state_propensities,
+                        state_variability
                     )
                 )
+
+        logger.debug("All the calculations have been done with success!")
 
         return results

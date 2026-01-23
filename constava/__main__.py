@@ -200,6 +200,8 @@ def parse_parameters(cmdline_arguments):
         degrees."""))
     anaMisc.add_argument("--precision", metavar="<int>", type=int, default=4, 
         help="Sets the number of decimals in the output files.")
+    anaMisc.add_argument("--indent_size", metavar="<int>", type=int, default=0, 
+        help="Sets the number of spaces used to indent the output document.")
     anaMisc.add_argument("--seed", metavar="<int>", type=int, default=None, 
         required=False, help="Set random seed for bootstrap sampling")
     anaMisc.add_argument("-v", "--verbose", action="count", default=0, help=tw.dedent(
@@ -282,6 +284,7 @@ def run_analyze(args):
     params.bootstrap_samples = args.bootstrap_samples
     params.input_degrees = args.degrees
     params.precision = args.precision
+    params.indent_size = args.indent_size
     params.seed = args.seed
     # Initialze and run Constava
     cva = Constava(params)

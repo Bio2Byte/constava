@@ -90,6 +90,8 @@ class ConstavaParameters:
             Set `True` if the data given under `model_data` to is given in degrees.
         precision : int
             Sets the number of decimals in the output files. By default, 4 decimal.
+        indent_size : int
+            Sets the number of spaces used to indent the output document. By default, 0.
         kde_bandwidth : float
             This controls the bandwidth of the Gaussian kernel density estimator.
         grid_points : int
@@ -121,6 +123,7 @@ class ConstavaParameters:
     input_degrees : bool = False
     model_data_degrees : bool = False
     precision : int = 4
+    indent_size : int = 0
     kde_bandwidth : float = .13
     grid_points : int = 10_000
     seed : int = None

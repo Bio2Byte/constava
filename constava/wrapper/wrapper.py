@@ -66,9 +66,9 @@ class Constava:
 		initialize_reader(format="auto", in_degrees=False):
             Initializes an EnsembleReader for reading input files, with the format specified by 'format' and whether
             the data is in degrees specified by 'in_degrees'.
-        initialize_writer(outfile, format="auto", float_precision=4):
+        initialize_writer(outfile, format="auto", float_precision=4, indent_size=0):
             Initializes a ResultsWriter for writing output results to a file specified by 'outfile', in the format
-            specified by 'format', and with float precision specified by 'float_precision'.
+            specified by 'format', and with float precision specified by 'float_precision' (and indent_size if needed)
         fit_csmodel()
             Fits a conformational state model to the provided data. Complex method, read its docstrings for details.
         load_csmodel(pickled_csmodel):
@@ -151,7 +151,9 @@ class Constava:
 		writer = self.initialize_writer(
 			outfile=self.get_param("output_file"),
 			format=self.get_param("output_format"),
-			float_precision=self.get_param("precision"))
+			float_precision=self.get_param("precision"),
+			indent_size=self.get_param("indent_size")
+		)
 
 		# Fit or load a conformational state model
 		if os.path.isfile(self.get_param("model_load") or ""):
@@ -208,7 +210,7 @@ class Constava:
 		reader = EnsembleReader(filetype_str=format, degrees2radians=in_degrees)
 		return reader
 
-	def initialize_writer(self, outfile, format: str = "auto", float_precision: int = 4) -> ResultsWriter:
+	def initialize_writer(self, outfile, format: str = "auto", float_precision: int = 4, indent_size: int = 0) -> ResultsWriter:
 		"""Initializes a ResultsWriter.
         
         Parameters:
@@ -220,6 +222,8 @@ class Constava:
                 Format in which the results should be written out. {'auto', 'csv', 'json'}
             float_precision: int
                 Sets de number of decimals in the output files. By default, 4 decimal.
+			indent_size: int
+				Sets the spaces used to indent the JSON documents
         
         Returns:
         --------
@@ -229,8 +233,8 @@ class Constava:
 		if outfile is None:
 			return None
 		logger.info("Initializing writer for results...")
-		logger.debug(f"... setting writer parameters: {outfile=}, {format=}, {float_precision=}")
-		writer = ResultsWriter(outfile, format=format, float_precision=float_precision)
+		logger.debug(f"... setting writer parameters: {outfile=}, {format=}, {float_precision=} {indent_size=}")
+		writer = ResultsWriter(outfile, format=format, float_precision=float_precision, indent_size=indent_size)
 		return writer
 
 	@cache_csmodel

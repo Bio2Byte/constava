@@ -10,8 +10,9 @@ from ..utils.results import ConstavaResults, ConstavaResultsEntry
 
 class WriterABC(metaclass=abc.ABCMeta):
     """Abstract base class for file writers"""
-    def __init__(self, float_precision: int = 4):
+    def __init__(self, float_precision: int = 4, indent_size: int = 0):
         self.float_precision = float_precision
+        self.indent_size = indent_size
 
     @abc.abstractmethod
     def write_results(self, fhandle: TextIO, results: List[ConstavaResults]):
@@ -40,7 +41,10 @@ class JsonWriter(WriterABC):
             }
             __dict["results"][result.method]["Variability"] = csvariability.tolist()
 
-        json.dump(__dict, fhandle)
+        if self.indent_size and self.indent_size > 0:
+            json.dump(__dict, fhandle, indent=self.indent_size)
+        else:
+            json.dump(__dict, fhandle)
         
         
 class CsvWriter(WriterABC):

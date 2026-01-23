@@ -133,10 +133,16 @@ class ConfStateModelKDE(ConfStateModelABC):
         self.state_kdes = tuple(state_kdes)
 
     def get_logpdf(self, data: np.ndarray) -> np.ndarray:
-        result = np.stack([
-            kde.score_samples(data) for kde in self.state_kdes
-        ])
-        return result
+        X = np.ascontiguousarray(data, dtype=np.float64)
+        
+        n_states = len(self.state_kdes)
+        n_samples = X.shape[0]
+        
+        result = np.empty((n_states, n_samples), dtype=np.float64)
+        for i, kde in enumerate(self.state_kdes):
+            result[i, :] = kde.score_samples(X)
+
+        return result.astype(np.float32, copy=False)
 
     @classmethod
     def from_fitting(cls, training_data_json: str, *, in_degrees=False, bandwidth=.13, **_):
@@ -208,14 +214,21 @@ class ConfStateModelGrid(ConfStateModelABC):
 
     def __init__(self, state_labels: List[str], state_grids: np.ndarray, grid_crds: Tuple):
         self.state_labels = tuple(state_labels)
-        self.state_grids = state_grids
+        self.state_grids = [np.ascontiguousarray(g, dtype=np.float64) for g in state_grids]
         self.grid_crds = grid_crds
     
     def get_logpdf(self, data: np.ndarray) -> np.ndarray:
-        result = np.stack([
-            interpn(self.grid_crds, grid, data) for grid in self.state_grids
-        ])
-        return result
+        X = np.ascontiguousarray(data, dtype=np.float64)
+        
+        n_states = len(self.state_grids)
+        n_samples = X.shape[0]
+        
+        result = np.empty((n_states, n_samples), dtype=np.float64)
+        
+        for i, grid in enumerate(self.state_grids):
+            result[i, :] = interpn(self.grid_crds, grid, X)
+
+        return result.astype(np.float32, copy=False)
     
     @classmethod
     def from_fitting(cls, training_data_json: str, *, in_degrees=False, bandwidth=.13, grid_points=10_000, **_):
