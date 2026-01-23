@@ -71,9 +71,11 @@ class ConstavaResults:
     def __repr__(self):
         return f"Results(method={self.method}, {len(self.entries)} entries)"
 
-    def add_entry(self, new_entry: ConstavaResultsEntry):
+    def add_entry(self, new_entry: ConstavaResultsEntry, sorted_insertion: bool = False):
         """Adds an additional entry to the result class"""
         if new_entry.residue.protein is not self.protein:
             raise EnsembleMismatchError(f"Result for residue {new_entry.residue} does not belong to the given Protein")
         self.entries.append(new_entry)
-        self.entries.sort(key=lambda x: x.residue.respos)
+        
+        if not sorted_insertion:
+            self.entries.sort(key=lambda x: x.residue.respos)

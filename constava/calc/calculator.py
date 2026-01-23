@@ -189,13 +189,14 @@ class ConfStateCalculator:
             for method in self.methods
         ]
 
-        for idx, residue in enumerate(ensemble.get_residues()):
+        for idx, residue in enumerate(ensemble.get_residues(sorted_list=True)):
             for result_idx, result in enumerate(results):
                 state_propensities = logpdf_state_propens_variabs[idx][result_idx][:-1]
                 state_variability  = logpdf_state_propens_variabs[idx][result_idx][-1]
 
                 result.add_entry(
-                    ConstavaResultsEntry(residue, state_propensities, state_variability)
+                    ConstavaResultsEntry(residue, state_propensities, state_variability),
+                    sorted_insertion=True
                 )
 
         logger.debug("All the results have been calculated with success!")

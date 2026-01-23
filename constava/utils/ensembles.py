@@ -111,9 +111,12 @@ class ProteinEnsemble:
             result[i] = value
         return result
     
-    def get_residues(self) -> Generator[ResidueEnsemble, None, None]:
+    def get_residues(self, sorted_list: bool = False) -> Generator[ResidueEnsemble, None, None]:
         """ Returns a generator for all residues in the class """
-        return (res for res in self._residues)
+        if sorted_list:
+            return (res for res in sorted(self._residues, key=lambda x: x.respos))
+        else:
+            return (res for res in self._residues)
     
     def add_residues(self, *new_residues: ResidueEnsemble):
         """ Adds a new residue to the ensemble, and sorts the residue list 
