@@ -332,9 +332,11 @@ class Constava:
 		# Quickly generate a csmodel if not done before
 		if csmodel is None:
 			csmodel = self.fit_csmodel()
+		
 		# Initialize the calculator
 		logger.info(f"Initializing calculator with {csmodel}...")
 		calculator = ConfStateCalculator(csmodel)
+		
 		# Add subsampling methods to calculator
 		for window_size in (window or []):
 			new_method = SubsamplingWindow(window_size)
@@ -352,4 +354,5 @@ class Constava:
 			new_method = SubsamplingBootstrapSeries(sample_size, bootstrap_samples, seed=bootstrap_seed)
 			logger.info(f"... adding subsampling method: {new_method.getShortName()}")
 			calculator.add_method(new_method)
+		
 		return calculator

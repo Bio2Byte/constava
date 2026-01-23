@@ -5,9 +5,9 @@ logger_configuration = {
     "version" : 1,
     "formatters" : {
         "default": {
-            "format" : "[{asctime}] {message}",
+            "format" : "%(asctime)s.%(msecs)03d %(levelname)s %(message)s",
             "datefmt" : "%Y-%m-%d %H:%M:%S",
-            "style" : "{",
+            "style" : "%",
             "validate" : True
         },
     },

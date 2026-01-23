@@ -3,10 +3,13 @@ conformational state propensities and conformational state variability from
 a protein ensemble
 """
 
-from collections import defaultdict
+import os
+import multiprocessing
 import logging
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, wait, FIRST_COMPLETED
 from typing import List
+import numpy as np
+
 import tqdm
 from .subsampling import SubsamplingABC, SubsamplingMethodError
 from .csmodels import ConfStateModelABC
@@ -16,23 +19,13 @@ from ..utils.results import ConstavaResults, ConstavaResultsEntry
 # The logger for the wrapper
 logger = logging.getLogger("Constava")
 
-_LOGPDF_WORKER_CSMODEL = None
-
-def _init_logpdf_worker(csmodel: ConfStateModelABC, methods: List[SubsamplingABC]):
-    """Initializer to share the conformational state model with worker processes."""
-    global _LOGPDF_WORKER_CSMODEL
-    global _LOGPDF_WORKER_METHODS
-
-    _LOGPDF_WORKER_CSMODEL = csmodel
-    _LOGPDF_WORKER_METHODS = methods
-
-def _compute_logpdf_worker(phipsi):
+def _self_compute_logpdf_worker(phipsi: np.ndarray, csmodel: ConfStateModelABC, methods: List[SubsamplingABC]):
     """Worker function executed in separate processes to compute logpdf."""
-    logpdf = _LOGPDF_WORKER_CSMODEL.get_logpdf(phipsi)
+    logpdf = csmodel.get_logpdf(phipsi)
     
     result = dict()
     
-    for method in _LOGPDF_WORKER_METHODS:
+    for method in methods:
         state_propensities, state_variability = method.calculate(logpdf)
 
         result[method.getShortName()] = { 
@@ -111,22 +104,59 @@ class ConfStateCalculator:
         n_residues = ensemble.n_residues
 
         logpdf_results = [None] * n_residues
+        # import ipdb; ipdb.set_trace()
         
-        with tqdm.tqdm(total=n_residues, unit="residue") as pbar:
-            with ProcessPoolExecutor(
-                initializer=_init_logpdf_worker, initargs=(self.csmodels, self.methods)
-            ) as executor:
-                futures = {
-                    executor.submit(_compute_logpdf_worker, residue.phipsi): idx
-                    for idx, residue in enumerate(residues)
-                }
+        try:
+            max_workers = os.process_cpu_count()
+        except AttributeError:
+            max_workers = multiprocessing.cpu_count()
 
-                for future in as_completed(futures):
-                    idx = futures[future]
-                    logpdf_results[idx] = future.result()
+        max_in_flight = max_workers * 4  # tweak: 1–4x workers is usually sane
+        
+        logger.debug(f"Starting the parallel inference of log-probability densities and calculations for propensities & variability...")
+        with ProcessPoolExecutor(max_workers=max_workers) as ex:    
+            it = iter(enumerate(residues))
+            in_flight = set()
+            
+            logger.debug(f"Process Pool Executor is ready to start: max_in_flight={max_in_flight}, max_workers={max_workers}")
+            
+            with tqdm.tqdm(total=n_residues, unit="residue") as progress_bar:                
+                
+                # Prime the pipeline
+                for _ in range(min(max_in_flight, n_residues)):
+                    idx, residue = next(it)
+                    phipsi = np.ascontiguousarray(residue.phipsi, dtype=np.float32)
                     
-                    pbar.update(1)
+                    fut = ex.submit(_self_compute_logpdf_worker, phipsi, self.csmodels, self.methods)
+                    
+                    fut.idx = idx  # attach index (simple and cheap)
+                    in_flight.add(fut)
 
+                completed = 0
+                while in_flight:
+                    done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
+                    
+                    for fut in done:
+                        idx = fut.idx
+                        logpdf_results[idx] = fut.result()
+                        
+                        progress_bar.update(1)
+                        completed += 1
+
+                        # refill
+                        try:
+                            idx, residue = next(it)
+                        except StopIteration:
+                            continue
+                        
+                        phipsi = np.ascontiguousarray(residue.phipsi, dtype=np.float32)
+                        
+                        nfut = ex.submit(_self_compute_logpdf_worker, phipsi, self.csmodels, self.methods)
+                        
+                        nfut.idx = idx
+                        in_flight.add(nfut)
+
+        logger.debug(f"Building the results objects...")
         for idx, residue in enumerate(residues):
             res_logpdf_results = logpdf_results[idx]
 
