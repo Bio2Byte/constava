@@ -32,22 +32,29 @@ def _init_self_worker(csmodels, methods):
 
 
 def _self_compute_logpdf_worker(phipsi: np.ndarray):
+    """
+    Worker function executed in a child process.
+
+    Performance change:
+    - Returns two lists aligned to method order instead of a nested defaultdict,
+      greatly reducing pickle/serialization overhead.
+    """
     csmodel = _SELF_WORKER_CSMODEL
     methods = _SELF_WORKER_METHODS
 
     logpdf = csmodel.get_logpdf(phipsi)
 
-    matrix_results = defaultdict()
+    # Return plain lists to minimize serialization costs.
+    # props_list[i] and var_list[i] correspond to methods[i].
+    props_list = [None] * len(methods)
+    var_list = [None] * len(methods)
 
     for method_idx, method in enumerate(methods):
-        matrix_results[method.getShortName()] = defaultdict()
-
         state_propensities, state_variability = method.calculate(logpdf)
+        props_list[method_idx] = state_propensities
+        var_list[method_idx] = state_variability
 
-        matrix_results[method.getShortName()]["propensities"] = state_propensities
-        matrix_results[method.getShortName()]["variability"] = state_variability
-
-    return matrix_results
+    return props_list, var_list
 
 
 def check_subsampling_methods(func):
@@ -87,9 +94,75 @@ class ConfStateCalculator:
         self.csmodels = csmodels
         self.methods = methods or []
 
+        # Improvement: keep a reusable process pool to avoid paying startup cost
+        # on every calculate() call.
+        self._executor = None
+        self._executor_max_workers = None
+        self._mp_context = None
+
     def add_method(self, new_method: SubsamplingABC):
         """Adds a new subsampling methods to the calculator."""
         self.methods.append(new_method)
+
+    def close(self):
+        """Shut down the internal reusable pool, if any."""
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=True, cancel_futures=False)
+            finally:
+                self._executor = None
+                self._executor_max_workers = None
+                self._mp_context = None
+
+    def __del__(self):
+        # Best-effort cleanup (don't raise during GC)
+        try:
+            self.close()
+        except Exception:
+            pass
+
+    def _get_mp_context(self):
+        """
+        Try to choose a fast start method.
+        - 'fork' is typically fastest on Linux (low startup overhead).
+        - On platforms where 'fork' isn't available/appropriate, fall back to default.
+        """
+        if self._mp_context is not None:
+            return self._mp_context
+
+        try:
+            # "fork" is usually fastest on Linux.
+            ctx = multiprocessing.get_context("fork")
+        except (ValueError, RuntimeError, AttributeError):
+            # Fallback to default context ("spawn" on Windows, often "spawn" on macOS).
+            ctx = multiprocessing.get_context()
+
+        self._mp_context = ctx
+        return ctx
+
+    def _get_or_create_executor(self, max_workers):
+        """
+        Reuse a cached executor if possible; otherwise create a new one.
+
+        Note: Reusing requires that csmodels/methods are intended to stay the same.
+        If you mutate methods frequently, consider calling close() and rebuilding.
+        """
+        if self._executor is not None and self._executor_max_workers == max_workers:
+            return self._executor
+
+        # If something changed, rebuild the pool.
+        self.close()
+
+        ctx = self._get_mp_context()
+
+        self._executor = ProcessPoolExecutor(
+            max_workers=max_workers,
+            initializer=_init_self_worker,
+            initargs=(self.csmodels, self.methods),
+            mp_context=ctx,
+        )
+        self._executor_max_workers = max_workers
+        return self._executor
 
     @check_subsampling_methods
     def calculate(self, ensemble: ProteinEnsemble) -> List[ConstavaResults]:
@@ -112,6 +185,8 @@ class ConfStateCalculator:
 
         n_residues = ensemble.n_residues
 
+        # Improvement: store per-residue results as compact lists aligned by method index.
+        # logpdf_state_propens_variabs[idx] = (props_list, var_list)
         logpdf_state_propens_variabs = defaultdict()
 
         try:
@@ -129,83 +204,79 @@ class ConfStateCalculator:
             "Starting inference of log-probability densities & propensities/variability"
         )
 
-        with ProcessPoolExecutor(
-            max_workers=max_workers,
-            initializer=_init_self_worker,
-            initargs=(self.csmodels, self.methods),
-        ) as process_pool_executor:
-            it = iter(enumerate(ensemble.get_residues()))
-            in_flight = set()
+        # Improvement: reuse pool across calls to avoid process startup cost
+        process_pool_executor = self._get_or_create_executor(max_workers=max_workers)
 
-            logger.debug(f"Max_in_flight={max_in_flight}, Max_workers={max_workers}")
+        it = iter(enumerate(ensemble.get_residues()))
+        in_flight = set()
 
-            with tqdm.tqdm(
-                total=n_residues,
-                desc="Residues",
-                unit="residue",
-                bar_format="{l_bar}{bar} | {n_fmt}/{total_fmt} "
-                "[{rate_fmt}, elapsed: {elapsed}, remaining: {remaining}]",
-            ) as progress_bar:
-                with logging_redirect_tqdm():
-                    # Prime the pipeline
-                    for _ in range(min(max_in_flight, n_residues)):
-                        idx, residue = next(it)
-                        phi_psi_angles = np.ascontiguousarray(residue.phipsi)
+        logger.debug(f"Max_in_flight={max_in_flight}, Max_workers={max_workers}")
 
-                        fut = process_pool_executor.submit(
+        with tqdm.tqdm(
+            total=n_residues,
+            desc="Residues",
+            unit="residue",
+            bar_format="{l_bar}{bar} | {n_fmt}/{total_fmt} "
+            "[{rate_fmt}, elapsed: {elapsed}, remaining: {remaining}]",
+        ) as progress_bar:
+            with logging_redirect_tqdm():
+                # Prime the pipeline
+                for _ in range(min(max_in_flight, n_residues)):
+                    idx, residue = next(it)
+                    phi_psi_angles = np.ascontiguousarray(residue.phipsi)
+
+                    fut = process_pool_executor.submit(
+                        _self_compute_logpdf_worker, phi_psi_angles
+                    )
+
+                    future_to_idx[fut] = idx
+                    in_flight.add(fut)
+
+                completed = 0
+                while in_flight:
+                    done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
+
+                    for fut in done:
+                        idx = future_to_idx.pop(fut)
+                        logpdf_state_propens_variabs[idx] = fut.result()
+
+                        progress_bar.update(1)
+                        completed += 1
+
+                        # refill
+                        try:
+                            idx, residue = next(it)
+                            phi_psi_angles = np.ascontiguousarray(residue.phipsi)
+                        except StopIteration:
+                            continue
+
+                        nfut = process_pool_executor.submit(
                             _self_compute_logpdf_worker, phi_psi_angles
                         )
 
-                        future_to_idx[fut] = idx
-
-                        in_flight.add(fut)
-
-                    completed = 0
-                    while in_flight:
-                        done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
-
-                        for fut in done:
-                            idx = future_to_idx.pop(fut)
-                            logpdf_state_propens_variabs[idx] = fut.result()
-
-                            progress_bar.update(1)
-                            completed += 1
-
-                            # refill
-                            try:
-                                idx, residue = next(it)
-                                phi_psi_angles = np.ascontiguousarray(residue.phipsi)
-                            except StopIteration:
-                                continue
-
-                            nfut = process_pool_executor.submit(
-                                _self_compute_logpdf_worker, phi_psi_angles
-                            )
-
-                            future_to_idx[nfut] = idx
-
-                            in_flight.add(nfut)
+                        future_to_idx[nfut] = idx
+                        in_flight.add(nfut)
 
         logger.debug(f"Building results for the {len(self.methods)} methods...")
 
+        # Improvement: compute method names once (no repeated calls inside workers)
+        method_names = [method.getShortName() for method in self.methods]
+
         results = [
             ConstavaResults(
-                method=method.getShortName(),
+                method=method_name,
                 protein=ensemble,
                 state_labels=self.csmodels.get_labels(),
             )
-            for method in self.methods
+            for method_name in method_names
         ]
 
         for idx, residue in enumerate(ensemble.get_residues(sorted_list=True)):
-            for result in results:
+            props_list, var_list = logpdf_state_propens_variabs[idx]
 
-                state_propensities = logpdf_state_propens_variabs[idx][result.method][
-                    "propensities"
-                ]
-                state_variability = logpdf_state_propens_variabs[idx][result.method][
-                    "variability"
-                ]
+            for method_idx, result in enumerate(results):
+                state_propensities = props_list[method_idx]
+                state_variability = var_list[method_idx]
 
                 result.add_entry(
                     ConstavaResultsEntry(
