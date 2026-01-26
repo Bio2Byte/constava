@@ -1,8 +1,10 @@
 import abc
 import csv
 import json
+import platform
+import sys
 from datetime import datetime
-from typing import List, TextIO 
+from typing import List, TextIO
 import numpy as np
 from ..utils.constants import CONSTAVA_NAME, CONSTAVA_VERSION
 from ..utils.results import ConstavaResults, ConstavaResultsEntry
@@ -10,6 +12,7 @@ from ..utils.results import ConstavaResults, ConstavaResultsEntry
 
 class WriterABC(metaclass=abc.ABCMeta):
     """Abstract base class for file writers"""
+
     def __init__(self, float_precision: int = 4, indent_size: int = 0):
         self.float_precision = float_precision
         self.indent_size = indent_size
@@ -27,16 +30,24 @@ class JsonWriter(WriterABC):
             "tool": CONSTAVA_NAME,
             "version": CONSTAVA_VERSION,
             "creation_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "python_version": sys.version,
+            "python_short_version": platform.python_version(),
             "results": {
                 "ResIndex": [entry.residue.respos for entry in results[0].entries],
                 "ResName": [entry.residue.restype for entry in results[0].entries],
-            }
+            },
         }
         for result in results:
-            cspropensites = np.round(np.stack([entry.state_propensities for entry in result.entries]), decimals=self.float_precision)
-            csvariability = np.round(np.stack([entry.state_variability for entry in result.entries]), decimals=self.float_precision)
+            cspropensites = np.round(
+                np.stack([entry.state_propensities for entry in result.entries]),
+                decimals=self.float_precision,
+            )
+            csvariability = np.round(
+                np.stack([entry.state_variability for entry in result.entries]),
+                decimals=self.float_precision,
+            )
             __dict["results"][result.method] = {
-                state_label: cspropensites[:,i].tolist() 
+                state_label: cspropensites[:, i].tolist()
                 for i, state_label in enumerate(result.state_labels)
             }
             __dict["results"][result.method]["Variability"] = csvariability.tolist()
@@ -45,20 +56,27 @@ class JsonWriter(WriterABC):
             json.dump(__dict, fhandle, indent=self.indent_size)
         else:
             json.dump(__dict, fhandle)
-        
-        
+
+
 class CsvWriter(WriterABC):
     """Writer strategy for writing CSV files"""
 
     csvdialect = {}
-    
+
     def write_results(self, fhandle: TextIO, results: List[ConstavaResults]):
         # Initialize csv writer
         writer = csv.writer(fhandle, **self.csvdialect)
         # Write the header line
-        writer.writerow([
-            "#Method", "SeriesIndex", "ResIndex", "ResName", 
-            *results[0].state_labels, "Variability"])
+        writer.writerow(
+            [
+                "#Method",
+                "SeriesIndex",
+                "ResIndex",
+                "ResName",
+                *results[0].state_labels,
+                "Variability",
+            ]
+        )
         # Iterate over results (methods) and entries (residues)
         for result in results:
             for entry in result.entries:
@@ -69,15 +87,20 @@ class CsvWriter(WriterABC):
         respos, restype = entry.residue.respos, entry.residue.restype
         # If average state propensities are reported, one row is written
         if len(entry.state_propensities.shape) == 1:
-            values = np.concatenate([entry.state_propensities, [entry.state_variability]])
+            values = np.concatenate(
+                [entry.state_propensities, [entry.state_variability]]
+            )
             yield (method, None, respos, restype, *map(flt2str, values))
         # If state propensities are reported as series, multiple rows are written
         else:
-            arr = np.concatenate([entry.state_propensities, [entry.state_variability]]).T
+            arr = np.concatenate(
+                [entry.state_propensities, [entry.state_variability]]
+            ).T
             for i, values in enumerate(arr):
                 yield (method, i, respos, restype, *map(flt2str, values))
 
 
 class TsvWriter(CsvWriter):
     """Writer strategy for writing TSV files (based on CsvWriter)"""
+
     csvdialect = {"delimiter": "\t"}

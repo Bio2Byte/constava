@@ -24,10 +24,12 @@ logger = logging.getLogger("Constava")
 _SELF_WORKER_CSMODEL = None
 _SELF_WORKER_METHODS = None
 
+
 def _init_self_worker(csmodels, methods):
     global _SELF_WORKER_CSMODEL, _SELF_WORKER_METHODS
     _SELF_WORKER_CSMODEL = csmodels
     _SELF_WORKER_METHODS = methods
+
 
 def _self_compute_logpdf_worker(phipsi: np.ndarray):
     csmodel = _SELF_WORKER_CSMODEL
@@ -35,15 +37,15 @@ def _self_compute_logpdf_worker(phipsi: np.ndarray):
 
     logpdf = csmodel.get_logpdf(phipsi)
 
-    n_methods = len(methods)
-    n_states = len(csmodel.get_labels())
-
-    matrix_results = np.empty((n_methods, n_states + 1))
+    matrix_results = defaultdict()
 
     for method_idx, method in enumerate(methods):
+        matrix_results[method.getShortName()] = defaultdict()
+
         state_propensities, state_variability = method.calculate(logpdf)
-        matrix_results[method_idx, :n_states] = state_propensities
-        matrix_results[method_idx, n_states] = state_variability
+
+        matrix_results[method.getShortName()]["propensities"] = state_propensities
+        matrix_results[method.getShortName()]["variability"] = state_variability
 
     return matrix_results
 
@@ -52,19 +54,25 @@ def check_subsampling_methods(func):
     """Decorator for ConfStateCalculator that checks, if appropriate subsampling
     methods have been defined.
     """
+
     def __inner(self, *args, **kwargs):
         check = [isinstance(m, SubsamplingABC) for m in self.methods]
         if len(check) < 1:
             raise SubsamplingMethodError("No subsampling methods specified.")
         elif not all(check):
-            raise SubsamplingMethodError("Incompatible subsampling method found. All subsampling methods should inherit from SubsamplingABC.")
+            raise SubsamplingMethodError(
+                "Incompatible subsampling method found. All subsampling methods should inherit from SubsamplingABC."
+            )
         return func(self, *args, **kwargs)
+
     return __inner
 
 
 class ConfStateCalculator:
 
-    def __init__(self, csmodels: ConfStateModelABC, methods: List[SubsamplingABC] = None):
+    def __init__(
+        self, csmodels: ConfStateModelABC, methods: List[SubsamplingABC] = None
+    ):
         """Initializes the calcualtor class with given conformational state
         models (csmodels) and zero or more subsampling methods.
 
@@ -104,39 +112,39 @@ class ConfStateCalculator:
 
         n_residues = ensemble.n_residues
 
-        logpdf_state_propens_variabs = np.empty(
-            (n_residues, len(self.methods), len(self.csmodels.get_labels()) + 1)
-        )
+        logpdf_state_propens_variabs = defaultdict()
 
         try:
             max_workers = os.process_cpu_count()
         except AttributeError:
             max_workers = multiprocessing.cpu_count()
-        
+
         if max_workers > 2:
             max_workers = max_workers - 1
 
         max_in_flight = max_workers * 2
         future_to_idx = defaultdict()
-        
-        logger.debug(f"Starting inference of log-probability densities & propens/var")
-        
+
+        logger.debug(
+            "Starting inference of log-probability densities & propensities/variability"
+        )
+
         with ProcessPoolExecutor(
             max_workers=max_workers,
             initializer=_init_self_worker,
-            initargs=(self.csmodels, self.methods)
+            initargs=(self.csmodels, self.methods),
         ) as process_pool_executor:
             it = iter(enumerate(ensemble.get_residues()))
             in_flight = set()
-            
+
             logger.debug(f"Max_in_flight={max_in_flight}, Max_workers={max_workers}")
 
             with tqdm.tqdm(
-                total=n_residues, 
-                desc="Residues", 
+                total=n_residues,
+                desc="Residues",
                 unit="residue",
                 bar_format="{l_bar}{bar} | {n_fmt}/{total_fmt} "
-               "[{rate_fmt}, elapsed: {elapsed}, remaining: {remaining}]",
+                "[{rate_fmt}, elapsed: {elapsed}, remaining: {remaining}]",
             ) as progress_bar:
                 with logging_redirect_tqdm():
                     # Prime the pipeline
@@ -147,7 +155,7 @@ class ConfStateCalculator:
                         fut = process_pool_executor.submit(
                             _self_compute_logpdf_worker, phi_psi_angles
                         )
-                            
+
                         future_to_idx[fut] = idx
 
                         in_flight.add(fut)
@@ -173,30 +181,37 @@ class ConfStateCalculator:
                             nfut = process_pool_executor.submit(
                                 _self_compute_logpdf_worker, phi_psi_angles
                             )
-                            
+
                             future_to_idx[nfut] = idx
-                            
+
                             in_flight.add(nfut)
 
         logger.debug(f"Building results for the {len(self.methods)} methods...")
-        
+
         results = [
             ConstavaResults(
                 method=method.getShortName(),
                 protein=ensemble,
-                state_labels=self.csmodels.get_labels()
+                state_labels=self.csmodels.get_labels(),
             )
             for method in self.methods
         ]
 
         for idx, residue in enumerate(ensemble.get_residues(sorted_list=True)):
-            for result_idx, result in enumerate(results):
-                state_propensities = logpdf_state_propens_variabs[idx][result_idx][:-1]
-                state_variability  = logpdf_state_propens_variabs[idx][result_idx][-1]
+            for result in results:
+
+                state_propensities = logpdf_state_propens_variabs[idx][result.method][
+                    "propensities"
+                ]
+                state_variability = logpdf_state_propens_variabs[idx][result.method][
+                    "variability"
+                ]
 
                 result.add_entry(
-                    ConstavaResultsEntry(residue, state_propensities, state_variability),
-                    sorted_insertion=True
+                    ConstavaResultsEntry(
+                        residue, state_propensities, state_variability
+                    ),
+                    sorted_insertion=True,
                 )
 
         logger.debug("All the results have been calculated with success!")
