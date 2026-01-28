@@ -1,6 +1,14 @@
 name: Python Package Unit Test Runner
-'on':
-  - push
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
