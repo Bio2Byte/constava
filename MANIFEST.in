@@ -1,7 +1,11 @@
-recursive-include constava/data *
+recursive-include constava/internal-data *
+
 include requirements.txt
 include LICENSE
 include authors.md
+include CITATION.cff
+include CONTRIBUTING.md
+include CODE_OF_CONDUCT.md
 
 global-exclude .DS_Store
 global-exclude *.pyc
@@ -12,3 +16,16 @@ global-exclude *.tmp
 global-exclude *.swp
 global-exclude *.bak
 global-exclude *.orig
+
+global-exclude *.egg-info
+global-exclude .pytest_cache
+global-exclude .coverage
+global-exclude htmlcov
+global-exclude .ruff_cache
+global-exclude .mypy_cache
+global-exclude .tox
+
+global-exclude dist
+global-exclude build
+global-exclude .idea
+global-exclude .vscode

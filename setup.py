@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -20,7 +20,9 @@ setup(
     maintainer="Adrián Díaz",
     maintainer_email="bio2byte@vub.be, adrian.diaz@vub.be",
     url="https://github.com/bio2byte/constava/",
-    packages=find_packages(),
+    packages=find_namespace_packages(
+        include=["constava*"],
+    ),
     include_package_data=True,
     classifiers=[
         "Natural Language :: English",

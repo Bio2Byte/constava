@@ -24,7 +24,6 @@ class TestWrapper(unittest.TestCase):
         super(TestWrapper, self).__init__(testName)
         self.verbosity = verbosity
 
-    TEST_SOURCE = os.path.join(CONSTAVA_DATA_DIR, "constava_testdata.tgz")
     TEST_TEMPORARY_DIRECTORY = None
     TEST_TEMPDIR = None
     TEST_MODELDUMP0 = None
@@ -48,7 +47,7 @@ class TestWrapper(unittest.TestCase):
                 prefix="model.", suffix=".pkl", dir=cls.TEST_TEMPDIR
             )
             cls.CONSTAVA_TEST_DATA_DIR = os.path.join(
-                CONSTAVA_DATA_DIR, "constava_testdata"
+                CONSTAVA_DATA_DIR, "constava-testdata"
             )
 
     @classmethod
@@ -111,8 +110,8 @@ class TestWrapper(unittest.TestCase):
         logger.warning(
             f"TEST #{self.get_test_count()}: Inference from 'kde' conformational state model..."
         )
-        input_files = glob.glob(f"{self.CONSTAVA_TEST_DATA_DIR}/xvg/ramaPhiPsi*.xvg")
-        expected_result = f"{self.CONSTAVA_TEST_DATA_DIR}/xvg/result_kde.csv"
+        input_files = glob.glob(f"{self.CONSTAVA_TEST_DATA_DIR}/xvg-files/ramaPhiPsi*.xvg")
+        expected_result = f"{self.CONSTAVA_TEST_DATA_DIR}/xvg-files/result_kde.csv"
         output_file = tempfile.NamedTemporaryFile(
             prefix="kde.", suffix=".csv", dir=self.TEST_TEMPDIR
         )
@@ -137,8 +136,8 @@ class TestWrapper(unittest.TestCase):
         logger.warning(
             f"TEST #{self.get_test_count()}: Inference from 'kde' conformational state model in JSON format..."
         )
-        input_files = glob.glob(f"{self.CONSTAVA_TEST_DATA_DIR}/xvg/ramaPhiPsi*.xvg")
-        expected_result = f"{self.CONSTAVA_TEST_DATA_DIR}/xvg/result_kde.json"
+        input_files = glob.glob(f"{self.CONSTAVA_TEST_DATA_DIR}/xvg-files/ramaPhiPsi*.xvg")
+        expected_result = f"{self.CONSTAVA_TEST_DATA_DIR}/xvg-files/result_kde.json"
         output_file = tempfile.NamedTemporaryFile(
             prefix="kde.", suffix=".json", dir=self.TEST_TEMPDIR
         )
@@ -243,9 +242,9 @@ class TestWrapper(unittest.TestCase):
         logger.warning(
             f"TEST #{self.get_test_count()}: Inference from 'grid' conformational state model..."
         )
-        input_files = f"{self.CONSTAVA_TEST_DATA_DIR}/csv/dihedrals.csv"
+        input_files = f"{self.CONSTAVA_TEST_DATA_DIR}/csv-files/dihedrals.csv"
         expected_result = (
-            f"{self.CONSTAVA_TEST_DATA_DIR}/csv/result_grid.bandwidth.42.csv"
+            f"{self.CONSTAVA_TEST_DATA_DIR}/csv-files/result_grid.bandwidth.42.csv"
         )
         output_file = tempfile.NamedTemporaryFile(
             prefix="grid.", suffix=".csv", dir=self.TEST_TEMPDIR
@@ -272,8 +271,8 @@ class TestWrapper(unittest.TestCase):
         logger.warning(
             f"TEST #{self.get_test_count()}: Inference from 'grid' conformational state model in JSON format..."
         )
-        input_files = f"{self.CONSTAVA_TEST_DATA_DIR}/csv/dihedrals.csv"
-        expected_result = f"{self.CONSTAVA_TEST_DATA_DIR}/csv/result_grid.json"
+        input_files = f"{self.CONSTAVA_TEST_DATA_DIR}/csv-files/dihedrals.csv"
+        expected_result = f"{self.CONSTAVA_TEST_DATA_DIR}/csv-files/result_grid.json"
         output_file = tempfile.NamedTemporaryFile(
             prefix="grid.", suffix=".json", dir=self.TEST_TEMPDIR
         )
