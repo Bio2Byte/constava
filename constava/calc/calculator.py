@@ -12,7 +12,6 @@ from typing import List
 import numpy as np
 
 import tqdm
-from tqdm.contrib.logging import logging_redirect_tqdm
 from .subsampling import SubsamplingABC, SubsamplingMethodError
 from .csmodels import ConfStateModelABC
 from ..utils.ensembles import ProteinEnsemble
@@ -194,9 +193,6 @@ class ConfStateCalculator:
         except AttributeError:
             max_workers = multiprocessing.cpu_count()
 
-        if max_workers > 2:
-            max_workers = max_workers - 1
-
         max_in_flight = max_workers * 2
         future_to_idx = defaultdict()
 
@@ -219,43 +215,42 @@ class ConfStateCalculator:
             bar_format="{l_bar}{bar} | {n_fmt}/{total_fmt} "
             "[{rate_fmt}, elapsed: {elapsed}, remaining: {remaining}]",
         ) as progress_bar:
-            with logging_redirect_tqdm():
-                # Prime the pipeline
-                for _ in range(min(max_in_flight, n_residues)):
-                    idx, residue = next(it)
-                    phi_psi_angles = np.ascontiguousarray(residue.phipsi)
+            # Prime the pipeline
+            for _ in range(min(max_in_flight, n_residues)):
+                idx, residue = next(it)
+                phi_psi_angles = np.ascontiguousarray(residue.phipsi)
 
-                    fut = process_pool_executor.submit(
+                fut = process_pool_executor.submit(
+                    _self_compute_logpdf_worker, phi_psi_angles
+                )
+
+                future_to_idx[fut] = idx
+                in_flight.add(fut)
+
+            completed = 0
+            while in_flight:
+                done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
+
+                for fut in done:
+                    idx = future_to_idx.pop(fut)
+                    logpdf_state_propens_variabs[idx] = fut.result()
+
+                    progress_bar.update(1)
+                    completed += 1
+
+                    # refill
+                    try:
+                        idx, residue = next(it)
+                        phi_psi_angles = np.ascontiguousarray(residue.phipsi)
+                    except StopIteration:
+                        continue
+
+                    nfut = process_pool_executor.submit(
                         _self_compute_logpdf_worker, phi_psi_angles
                     )
 
-                    future_to_idx[fut] = idx
-                    in_flight.add(fut)
-
-                completed = 0
-                while in_flight:
-                    done, in_flight = wait(in_flight, return_when=FIRST_COMPLETED)
-
-                    for fut in done:
-                        idx = future_to_idx.pop(fut)
-                        logpdf_state_propens_variabs[idx] = fut.result()
-
-                        progress_bar.update(1)
-                        completed += 1
-
-                        # refill
-                        try:
-                            idx, residue = next(it)
-                            phi_psi_angles = np.ascontiguousarray(residue.phipsi)
-                        except StopIteration:
-                            continue
-
-                        nfut = process_pool_executor.submit(
-                            _self_compute_logpdf_worker, phi_psi_angles
-                        )
-
-                        future_to_idx[nfut] = idx
-                        in_flight.add(nfut)
+                    future_to_idx[nfut] = idx
+                    in_flight.add(nfut)
 
         logger.debug(f"Building results for the {len(self.methods)} methods...")
 

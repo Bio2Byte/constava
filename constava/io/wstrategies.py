@@ -66,6 +66,7 @@ class CsvWriter(WriterABC):
     def write_results(self, fhandle: TextIO, results: List[ConstavaResults]):
         # Initialize csv writer
         writer = csv.writer(fhandle, **self.csvdialect)
+
         # Write the header line
         writer.writerow(
             [
@@ -85,17 +86,20 @@ class CsvWriter(WriterABC):
     def _write_entry(self, entry: ConstavaResultsEntry, method: str) -> List:
         flt2str = lambda x: "{0:.{1:d}f}".format(x, self.float_precision)
         respos, restype = entry.residue.respos, entry.residue.restype
+
         # If average state propensities are reported, one row is written
         if len(entry.state_propensities.shape) == 1:
             values = np.concatenate(
                 [entry.state_propensities, [entry.state_variability]]
             )
             yield (method, None, respos, restype, *map(flt2str, values))
+
         # If state propensities are reported as series, multiple rows are written
         else:
             arr = np.concatenate(
                 [entry.state_propensities, [entry.state_variability]]
             ).T
+
             for i, values in enumerate(arr):
                 yield (method, i, respos, restype, *map(flt2str, values))
 

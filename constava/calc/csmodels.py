@@ -56,7 +56,8 @@ class ConfStateModelABC(metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def from_fitting(cls, training_data_json: str, **kwargs):
         pass
 
@@ -82,6 +83,7 @@ class ConfStateModelABC(metaclass=abc.ABCMeta):
         """
         with open(pickled_file, "rb") as fhandle:
             csmodel = pickle.load(fhandle)
+
         if not isinstance(csmodel, cls):
             raise ConfStateModelLoadingError(
                 (
@@ -137,15 +139,9 @@ class ConfStateModelKDE(ConfStateModelABC):
         self.state_kdes = tuple(state_kdes)
 
     def get_logpdf(self, data: np.ndarray) -> np.ndarray:
-        X = np.ascontiguousarray(data, dtype=np.float64)
-
-        n_states = len(self.state_kdes)
-        n_samples = X.shape[0]
-
-        result = np.empty((n_states, n_samples), dtype=np.float64)
-        for i, kde in enumerate(self.state_kdes):
-            result[i, :] = kde.score_samples(X)
-
+        result = np.stack([
+            kde.score_samples(data) for kde in self.state_kdes
+        ])
         return result
 
     @classmethod
@@ -170,13 +166,15 @@ class ConfStateModelKDE(ConfStateModelABC):
                 Probabilistic model of conformational states based on a Gaussian
                 kernel density estimator
         """
-        with open(training_data_json, "r") as fhandle:
+        with open(training_data_json, "r", encoding="utf-8") as fhandle:
             training_data = json.load(fhandle)
+
         # Iterate over conformational states and train pdf estimator
         kde_list, lbl_list = [], []
         for label, data in training_data.items():
             data = np.radians(data) if in_degrees else np.array(data)
             check_dihedral_range(data)
+
             # Fit Gaussian kernel density estimator
             kde = KernelDensity(bandwidth=bandwidth)
             kde.fit(data)
@@ -223,22 +221,13 @@ class ConfStateModelGrid(ConfStateModelABC):
         self, state_labels: List[str], state_grids: np.ndarray, grid_crds: Tuple
     ):
         self.state_labels = tuple(state_labels)
-        self.state_grids = [
-            np.ascontiguousarray(g, dtype=np.float64) for g in state_grids
-        ]
+        self.state_grids = state_grids
         self.grid_crds = grid_crds
 
     def get_logpdf(self, data: np.ndarray) -> np.ndarray:
-        X = np.ascontiguousarray(data, dtype=np.float64)
-
-        n_states = len(self.state_grids)
-        n_samples = X.shape[0]
-
-        result = np.empty((n_states, n_samples), dtype=np.float64)
-
-        for i, grid in enumerate(self.state_grids):
-            result[i, :] = interpn(self.grid_crds, grid, X)
-
+        result = np.stack([
+            interpn(self.grid_crds, grid, data) for grid in self.state_grids
+        ])
         return result
 
     @classmethod
@@ -282,8 +271,9 @@ class ConfStateModelGrid(ConfStateModelABC):
         )
         # Infer PDF grid from a KDE model
         kde_model = ConfStateModelKDE.from_fitting(
-            training_data_json, bandwidth=0.13, in_degrees=in_degrees
+            training_data_json, bandwidth=bandwidth, in_degrees=in_degrees
         )
         _labels = kde_model.get_labels()
         _grids = np.reshape(kde_model.get_logpdf(gridcrds), (-1, n, n), order="C")
+
         return cls(state_labels=_labels, state_grids=_grids, grid_crds=(_phi, _psi))

@@ -21,11 +21,9 @@ def set_logger_level(func):
 def set_single_as_list(func):
     """Allows list-attributes (e.g., window) to be set with a single value"""
     def _inner_(self, __attr, __value):
-        # ADIAZ: It works for <=3.13
-        # dtype = typing.get_type_hints(self).get(__attr, None)
-        hints = typing.get_type_hints(type(self))      # or self.__class__
+        hints = typing.get_type_hints(type(self))
         dtype = hints.get(__attr, None)
-        
+
         if typing.get_origin(dtype) is list:
             if __value is None:
                 __value = []
@@ -38,7 +36,7 @@ def set_single_as_list(func):
 @dataclass
 class ConstavaParameters:
     """The parameters that govern the function of Constava
-    
+
     Parameters:
     -----------
         input_files : List[str] or str

@@ -1,4 +1,4 @@
-"""constava.methods contains classes representing subsampling schemes fro the
+"""constava.methods contains classes representing sub-sampling schemes fro the
 probability state propensity calculations. Multiple of these schemes can be
 dynamically defined on run-time."""
 
@@ -7,7 +7,7 @@ import numpy as np
 from typing import Optional
 
 class SubsamplingMethodError(ValueError):
-    """Raised when there are no subsampling methods passed to the calculator"""
+    """Raised when there are no sub-sampling methods passed to the calculator"""
     pass
 
 class SubsamplingABC(metaclass=abc.ABCMeta):
@@ -253,9 +253,10 @@ class SubsamplingBootstrap(SubsamplingABC):
         # distribution. -> Array[n_states, n_samples, sample_size]
         rng = np.random.default_rng(self.seed)
         samples = rng.integers(n_measurements, size=self.sample_size * self.n_samples)
+        
         logpdf = np.reshape(
-            logpdf[:,samples], (n_states, self.n_samples, self.sample_size),
-            order="C")
+            logpdf[:, samples], (n_states, self.n_samples, self.sample_size),order="C"
+        )
 
         # Accumulate logpdfs within a sample = logpdf for each of these samples
         # to be sampled from the same conformational state
