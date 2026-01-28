@@ -1,0 +1,39 @@
+name: Python Package Unit Test Runner
+'on':
+  - push
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
+          - '3.14'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Add conda to system path
+        run: >
+          # $CONDA is an environment variable pointing to the root of the
+          miniconda directory
+
+          echo $CONDA/bin >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Install Constava in debug mode
+        run: |
+          pip install -e .
+      - name: Test using the own command
+        run: |
+          constava test
