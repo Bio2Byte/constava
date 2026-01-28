@@ -1,2 +1,14 @@
-include constava/data/*
+recursive-include constava/data *
 include requirements.txt
+include LICENSE
+include authors.md
+
+global-exclude .DS_Store
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude *.log
+global-exclude *.tmp
+global-exclude *.swp
+global-exclude *.bak
+global-exclude *.orig

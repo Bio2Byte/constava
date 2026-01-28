@@ -68,7 +68,7 @@ submodule, which supports a wide range of MD and structure formats.
 ## Installation
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.8 or higher (up to 3.14 inclusive)
 - pip
 
 [<Go to top>](#constava)
@@ -95,7 +95,7 @@ If the package requires to be uninstalled, run `pip uninstall constava`.
 
 ### Installation through conda
 
-To install constava through conda please follow the instructions below (both [Conda-Forge](https://conda-forge.org) and [Bioconda](https://bioconda.github.io) channels are required to install Constava dependencies).
+To install Constava through conda please follow the instructions below (both [Conda-Forge](https://conda-forge.org) and [Bioconda](https://bioconda.github.io) channels are required to install Constava dependencies).
 
 ```sh
 # Create a conda environment (optional but recommended):
@@ -116,7 +116,7 @@ If the package requires to be uninstalled, run `conda remove constava`.
 ### Installation from the source
 
 To download and install the latest version of the software from the source code
-follow the instructions below.
+follow the instructions below (you will have to install `wheel`, `build` & `setuptools`)
 
 ```sh
 # Clone the repository:
@@ -126,6 +126,9 @@ cd constava
 # Create a virtual environment (optional but recommended):
 python3 -m venv constava
 source constava/bin/activate
+
+# Install the building dependencies:
+python3 -m pip install wheel build setuptools
 
 # Build and install the package from the packages root directory:
 # ... build package from source
@@ -363,6 +366,8 @@ Miscellaneous options:
   --degrees             Set this flag, if dihedrals in the input files are in 
                         degrees.
   --precision <int>     Sets the number of decimals in the output files.
+  --indent_size <int>   Sets the number of spaces used to indent 
+                        the output document (default: 0)
   --seed <int>          Set random seed for bootstrap sampling
   -v, --verbose         Set verbosity level of screen output. Flag can be given 
                         multiple times (up to 2) to gradually increase output to 
@@ -375,7 +380,9 @@ An example:
 # Run constava with debug-level output
 constava analyze \
     -i "2mkx_dihedrals.csv" \
-    -o "2mkx_constava.json" --output-format json \
+    -o "2mkx_constava.json" \
+    --output-format json \
+    --indent_size 4 \
     --window 3 5 25 \
     -vv
 ```
