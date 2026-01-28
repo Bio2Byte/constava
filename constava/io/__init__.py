@@ -1,2 +1,6 @@
+"""
+constava.io module.
+"""
+
 from .reader import EnsembleReader
 from .writer import ResultsWriter

@@ -1,3 +1,6 @@
+"""
+constava.wrapper.params contains the logic to handle user parameters
+"""
 from dataclasses import dataclass, field
 import typing
 from ..utils.logging import logging
@@ -16,25 +19,29 @@ def set_logger_level(func):
             else:
                 logger.setLevel(logging.DEBUG)
         return rvalue
+
     return _inner_
 
 def set_single_as_list(func):
     """Allows list-attributes (e.g., window) to be set with a single value"""
     def _inner_(self, __attr, __value):
-        dtype = typing.get_type_hints(self).get(__attr, None)
+        hints = typing.get_type_hints(type(self))
+        dtype = hints.get(__attr, None)
+
         if typing.get_origin(dtype) is list:
             if __value is None:
                 __value = []
             elif not isinstance(__value, typing.Iterable) or isinstance(__value, str):
                 __value = [__value]
         return func(self, __attr, __value)
+
     return _inner_
 
 
 @dataclass
 class ConstavaParameters:
     """The parameters that govern the function of Constava
-    
+
     Parameters:
     -----------
         input_files : List[str] or str
@@ -86,6 +93,8 @@ class ConstavaParameters:
             Set `True` if the data given under `model_data` to is given in degrees.
         precision : int
             Sets the number of decimals in the output files. By default, 4 decimal.
+        indent_size : int
+            Sets the number of spaces used to indent the output document. By default, 0.
         kde_bandwidth : float
             This controls the bandwidth of the Gaussian kernel density estimator.
         grid_points : int
@@ -106,7 +115,7 @@ class ConstavaParameters:
     model_data : str = None
     model_dump : str = None
 
-    # Subsampling Options
+    # Sub-sampling Options
     window : typing.List[int] = field(default_factory=list)
     bootstrap : typing.List[int] = field(default_factory=list)
     window_series : typing.List[int] = field(default_factory=list)
@@ -117,6 +126,7 @@ class ConstavaParameters:
     input_degrees : bool = False
     model_data_degrees : bool = False
     precision : int = 4
+    indent_size : int = 0
     kde_bandwidth : float = .13
     grid_points : int = 10_000
     seed : int = None
@@ -128,5 +138,5 @@ class ConstavaParameters:
     @set_logger_level
     @set_single_as_list
     def __setattr__(self, __attr, __value) -> None:
-        """Custom function to set attributes, to catch certain special behaviours"""
+        """Custom function to set attributes, to catch certain special behaviors"""
         super().__setattr__(__attr, __value)

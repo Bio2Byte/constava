@@ -1,0 +1,3 @@
+"""
+constava.calc module.
+"""

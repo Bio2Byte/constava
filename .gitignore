@@ -61,3 +61,6 @@ build/
 conformine_training_dataset/
 constava/data/*.pkl
 datagen/
+
+# Python
+__pycache__

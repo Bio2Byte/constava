@@ -1,4 +1,4 @@
-"""constava.reader contains the reader interface to read input data"""
+"""constava.io.reader contains the reader interface to read input data"""
 
 from typing import List
 from .rstrategies import ReaderABC, DihedralCsvReader, GmxChiReader, UnknownFileStructureError
@@ -61,7 +61,7 @@ class EnsembleReader:
     
     def get_strategy(self, filetype: str, input_files: List[str]) -> ReaderABC:
         """Method to return an appropriate reader strategy. This is primarily
-        based on the `filetype_str`. If `auto` was provieded the reader strategy
+        based on the `filetype_str`. If `auto` was provided the reader strategy
         is guessed based on file structures and filenames.
 
         Parameters:
@@ -105,10 +105,12 @@ class EnsembleReader:
                 If no appropriate reader strategy was found.
         """
         # Check for the internal CSV-format
-        for Reader in cls.STRATEGIES.values():
-            reader = Reader(degrees=degrees)
+        for reader_cls in cls.STRATEGIES.values():
+            reader = reader_cls(degrees=degrees)
             if reader.checkFileFormat(*input_files):
                 return reader
-        else:
-            # IF all checks fail, raise an UnknownFileStructureError
-            raise UnknownFileStructureError("Dihedral input corresponds to no known input format.")
+
+        # IF all checks fail, raise an UnknownFileStructureError
+        raise UnknownFileStructureError(
+            "Dihedral input corresponds to no known input format."
+        )

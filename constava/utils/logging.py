@@ -1,33 +1,37 @@
+"""
+constava.utils.logging contains the standard logging configurations
+"""
+
 import logging
 import logging.config
 
 logger_configuration = {
-    "version" : 1,
-    "formatters" : {
+    "version": 1,
+    "formatters": {
         "default": {
-            "format" : "[{asctime}] {message}",
-            "datefmt" : "%Y-%m-%d %H:%M:%S",
-            "style" : "{",
-            "validate" : True
+            "format": "%(asctime)s.%(msecs)03d %(levelname)s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "style": "%",
+            "validate": True,
         },
     },
-    "handlers" : {
-        "console" : {
-            "class" : "logging.StreamHandler",
-            "formatter" : "default",
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "default",
             "stream": "ext://sys.stdout",
         },
-        "null" : {
-            "class" : "logging.NullHandler",
-        }
-    },
-    "loggers" : {
-        "Constava" : {
-            "handlers" : ["console"],
-            "level" : "WARNING",
+        "null": {
+            "class": "logging.NullHandler",
         },
-        "Dummy" : {
-            "handlers" : ["null"],
+    },
+    "loggers": {
+        "Constava": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "Dummy": {
+            "handlers": ["null"],
         },
     },
 }
