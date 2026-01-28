@@ -20,8 +20,8 @@ from ..utils.results import ConstavaResults, ConstavaResultsEntry
 # The logger for the wrapper
 logger = logging.getLogger("Constava")
 
-_SELF_WORKER_CSMODEL = None
-_SELF_WORKER_METHODS = None
+_SELF_WORKER_CSMODEL: ConfStateModelABC = None
+_SELF_WORKER_METHODS: List[SubsamplingABC] = None
 
 
 def _init_self_worker(csmodels, methods):
@@ -50,6 +50,7 @@ def _self_compute_logpdf_worker(phipsi: np.ndarray):
 
     for method_idx, method in enumerate(methods):
         state_propensities, state_variability = method.calculate(logpdf)
+
         props_list[method_idx] = state_propensities
         var_list[method_idx] = state_variability
 
@@ -117,7 +118,7 @@ class ConfStateCalculator:
         # Best-effort cleanup (don't raise during GC)
         try:
             self.close()
-        except Exception:
+        except BaseException:
             pass
 
     def _get_mp_context(self):
@@ -183,10 +184,8 @@ class ConfStateCalculator:
         """
 
         n_residues = ensemble.n_residues
-
-        # Improvement: store per-residue results as compact lists aligned by method index.
-        # logpdf_state_propens_variabs[idx] = (props_list, var_list)
-        logpdf_state_propens_variabs = defaultdict()
+        residues_propensities_variabilities = dict()
+        future_to_idx = dict()
 
         try:
             max_workers = os.process_cpu_count()
@@ -194,7 +193,6 @@ class ConfStateCalculator:
             max_workers = multiprocessing.cpu_count()
 
         max_in_flight = max_workers * 2
-        future_to_idx = defaultdict()
 
         logger.debug(
             "Starting inference of log-probability densities & propensities/variability"
@@ -206,8 +204,6 @@ class ConfStateCalculator:
         it = iter(enumerate(ensemble.get_residues()))
         in_flight = set()
 
-        logger.debug(f"Max_in_flight={max_in_flight}, Max_workers={max_workers}")
-
         with tqdm.tqdm(
             total=n_residues,
             desc="Residues",
@@ -218,10 +214,9 @@ class ConfStateCalculator:
             # Prime the pipeline
             for _ in range(min(max_in_flight, n_residues)):
                 idx, residue = next(it)
-                phi_psi_angles = np.ascontiguousarray(residue.phipsi)
 
                 fut = process_pool_executor.submit(
-                    _self_compute_logpdf_worker, phi_psi_angles
+                    _self_compute_logpdf_worker, residue.phipsi
                 )
 
                 future_to_idx[fut] = idx
@@ -233,7 +228,7 @@ class ConfStateCalculator:
 
                 for fut in done:
                     idx = future_to_idx.pop(fut)
-                    logpdf_state_propens_variabs[idx] = fut.result()
+                    residues_propensities_variabilities[idx] = fut.result()
 
                     progress_bar.update(1)
                     completed += 1
@@ -241,12 +236,11 @@ class ConfStateCalculator:
                     # refill
                     try:
                         idx, residue = next(it)
-                        phi_psi_angles = np.ascontiguousarray(residue.phipsi)
                     except StopIteration:
                         continue
 
                     nfut = process_pool_executor.submit(
-                        _self_compute_logpdf_worker, phi_psi_angles
+                        _self_compute_logpdf_worker, residue.phipsi
                     )
 
                     future_to_idx[nfut] = idx
@@ -254,29 +248,24 @@ class ConfStateCalculator:
 
         logger.debug(f"Building results for the {len(self.methods)} methods...")
 
-        # Improvement: compute method names once (no repeated calls inside workers)
-        method_names = [method.getShortName() for method in self.methods]
-
         results = [
             ConstavaResults(
-                method=method_name,
+                method=method.getShortName(),
                 protein=ensemble,
                 state_labels=self.csmodels.get_labels(),
             )
-            for method_name in method_names
+            for method in self.methods
         ]
 
-        for idx, residue in enumerate(ensemble.get_residues(sorted_list=True)):
-            props_list, var_list = logpdf_state_propens_variabs[idx]
+        for idx, res in enumerate(ensemble.get_residues(sorted_list=True)):
+            props_list, var_list = residues_propensities_variabilities[idx]
 
             for method_idx, result in enumerate(results):
                 state_propensities = props_list[method_idx]
                 state_variability = var_list[method_idx]
 
                 result.add_entry(
-                    ConstavaResultsEntry(
-                        residue, state_propensities, state_variability
-                    ),
+                    ConstavaResultsEntry(res, state_propensities, state_variability),
                     sorted_insertion=True,
                 )
 
