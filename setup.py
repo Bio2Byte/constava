@@ -14,12 +14,12 @@ setup(
     description="This software is used to calculate conformational states probability & conformational state "
     "variability from a protein structure ensemble.",
     license="GPL-3.0-only",
-    license_files=["LICEN[CS]E*", "authors.md"],
+    license_files=["LICENSE", "authors.md"],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    maintainer="Adrián Díaz, Wim Vranken",
-    maintainer_email="bio2byte@vub.be, adrian.diaz@vub.be, wim.vranken@vub.be",
-    url="https://bitbucket.org/bio2byte/constava/",
+    maintainer="Adrián Díaz",
+    maintainer_email="bio2byte@vub.be, adrian.diaz@vub.be",
+    url="https://github.com/bio2byte/constava/",
     packages=find_packages(),
     include_package_data=True,
     classifiers=[
