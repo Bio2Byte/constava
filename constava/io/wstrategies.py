@@ -1,3 +1,7 @@
+"""
+constava.io.wstrategies contains the writer classes to handle output files.
+"""
+
 import abc
 import csv
 import json

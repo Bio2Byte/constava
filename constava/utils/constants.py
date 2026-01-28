@@ -1,4 +1,4 @@
-"""constava.constants contains general information for all modules"""
+"""constava.utils.constants contains general information for all modules"""
 from importlib.metadata import version
 import os
 
@@ -8,11 +8,11 @@ CONSTAVA_SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))
 CONSTAVA_DATA_DIR = os.path.join(CONSTAVA_SOURCE_DIR, "internal-data")
 DEFAULT_TRAINING_DATA_PATH = os.path.join(CONSTAVA_DATA_DIR, "constava_csdata.json")
 
-aminoacids1to3 = dict(
+AMINO_ACIDS_1_TO_3 = dict(
 	A="ALA", C="CYS", D="ASP", E="GLU", F="PHE",
 	G="GLY", H="HIS", I="ILE", K="LYS", L="LEU",
 	M="MET", N="ASN", P="PRO", Q="GLN", R="ARG",
 	S="SER", T="THR", V="VAL", W="TRP", Y="TYR",
 )
 
-aminoacids3to1 = {j: i for i, j in aminoacids1to3.items()}
+AMINO_ACIDS_3_TO_1 = {j: i for i, j in AMINO_ACIDS_1_TO_3.items()}

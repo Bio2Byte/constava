@@ -1,4 +1,4 @@
-"""constava.csmodels contains various definitions how the conformational
+"""constava.calc.csmodels contains various definitions how the conformational
 states can be represented as probabilistic models.
 """
 

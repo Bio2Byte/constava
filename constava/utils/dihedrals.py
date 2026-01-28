@@ -1,5 +1,5 @@
-"""constava.dihedrals is a stand-alone executable script that extracts the
-phi/psi backbone dihedral angles from a conformational ensmeble."""
+"""constava.utils.dihedrals is a stand-alone executable script that extracts the
+phi/psi backbone dihedral angles from a conformational ensemble."""
 
 import argparse
 import os
@@ -69,7 +69,7 @@ def parse_arguments(cmdline_arguments: List[str]) -> NamedTuple:
             raise FileExistsError(
                 (
                     "Output file `{args.outfile}` exists already. Please, specify "
-                    "--outfile explicitely to overwrite or choose a different file name."
+                    "--outfile explicitly to overwrite or choose a different file name."
                 )
             )
     return args

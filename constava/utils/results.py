@@ -1,4 +1,4 @@
-"""constava.results contains classes that hold output information.
+"""constava.utils.results contains classes that hold output information.
 
 ConstavaResultsEntry stores state_propensities and state_variability for
 a single ResidueEnsemble.

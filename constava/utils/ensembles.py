@@ -1,4 +1,4 @@
-"""constava.ensembles contains classes describing the input data from the
+"""constava.utils.ensembles contains classes describing the input data from the
 conformational ensemble.
 """
 
@@ -6,13 +6,12 @@ from dataclasses import dataclass
 from typing import List, Generator
 import numpy as np
 
-from .constants import aminoacids3to1
+from .constants import AMINO_ACIDS_3_TO_1
 
 
 class EnsembleMismatchError(ValueError):
     """Error raised when ResidueEnsembles from different ProteinEnsembles are mixed"""
 
-    pass
 
 
 @dataclass
@@ -26,7 +25,7 @@ class ResidueEnsemble:
         respos: int             Index of the residue in the sequence
         phipsi: array[N,2]      Array of the phi/psi angles of the residue
                                 for all conformations in the ensemble
-        proteinensemble: ProteinEnsemble
+        protein:                ProteinEnsemble:
                                 Reference to the ProteinEnsemble-object, the
                                 residue belongs to.
     """
@@ -35,11 +34,12 @@ class ResidueEnsemble:
     respos: int = None
     phipsi: np.ndarray = None
     protein = None
+    amino_acids_3_to_1 = AMINO_ACIDS_3_TO_1.copy()
 
     @property
     def restype1(self):
         """Converts the restype attribute to one-letter code"""
-        return aminoacids3to1.get(self.restype, "X")
+        return self.amino_acids_3_to_1.get(self.restype, "X")
 
     def __repr__(self):
         """Short representation of the object"""
@@ -108,6 +108,7 @@ class ProteinEnsemble:
         residues across the whole protein."""
         offset = self._residues[0].respos
         result = None
+
         for i, value in (
             (res.respos - offset, getattr(res, resattr)) for res in self.get_residues()
         ):
@@ -118,12 +119,14 @@ class ProteinEnsemble:
             elif result is None:
                 result = np.full((self.n_residues,), fillvalue)
             result[i] = value
+
         return result
 
     def get_residues(
         self, sorted_list: bool = False
     ) -> Generator[ResidueEnsemble, None, None]:
         """Returns a generator for all residues in the class"""
+        
         if sorted_list:
             return (res for res in sorted(self._residues, key=lambda x: x.respos))
         else:
@@ -135,11 +138,13 @@ class ProteinEnsemble:
         for res in new_residues:
             res.protein = self
             self._residues.append(res)
+
         self._residues.sort()
-        # self.__dict__.pop('sequence', None)
-        # self.__dict__.pop('dynamics', None)
-        # self.__dict__.pop('conformation', None)
 
     def to_dict(self):
+        """
+        Return the residues data as a Python dictionary.
+        """
+
         _data = {"residues": [res.to_dict() for res in self.get_residues()]}
         return _data

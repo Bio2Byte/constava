@@ -1,3 +1,7 @@
+"""
+constava.io.rstrategies contains the reader classes to handle input files.
+"""
+
 import abc
 import os
 import re
@@ -10,7 +14,6 @@ from ..utils.utils import check_dihedral_range
 
 class UnknownFileStructureError(ValueError):
     """Raised if the file structure is not recognized"""
-    pass
 
 
 class ReaderABC(metaclass=abc.ABCMeta):
@@ -118,8 +121,8 @@ class DihedralCsvReader(ReaderABC):
 class GmxChiReader(ReaderABC):
     """A reader strategy designed to read the output of GROMACS' chi module
     command: `gmx chi -s <structure> -f <trajectory> -rama`. The files are
-    generally named `ramaPhiPsi[RESNAME][RESINDEX].xvg`. 
-    
+    generally named `ramaPhiPsi[RESNAME][RESINDEX].xvg`.
+
     Both RESNAME and RESINDEX are directly extracted from the filename.
 
     Attributes:
@@ -152,6 +155,7 @@ class GmxChiReader(ReaderABC):
             check_ok : bool
                 True if all provided files adhere to the file format, else False.
         """
+
         for filename in (os.path.basename(fp) for fp in input_files):
             if not cls.FILENAME_REGEX.match(filename):
                 return False
@@ -172,15 +176,16 @@ class GmxChiReader(ReaderABC):
             prot : ProteinEnsemble
                 Object that stores the dihedral angles for all the residues.
         """
-        
+
         residue_list = []
+
         for infile in input_files:
             filename = os.path.basename(infile)
             m = self.FILENAME_REGEX.match(filename)
             if m is None:
                 raise UnknownFileStructureError((
                     f"File does not match the structure of `gmx chi` outputs: {filename}"))
-            
+
             restype = m.group(1)
             respos = int(m.group(2))
             phipsi = np.loadtxt(infile, comments=["#", "@"])

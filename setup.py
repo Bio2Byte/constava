@@ -1,3 +1,7 @@
+"""
+Python package definition.
+"""
+
 from setuptools import setup, find_namespace_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -8,7 +12,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="constava",
-    version="1.2.0b1",
+    version="1.2.0",
     author="Wim Vranken",
     author_email="wim.vranken@vub.be",
     description="This software is used to calculate conformational states probability & conformational state "
@@ -50,6 +54,6 @@ setup(
         ],
     },
     package_data={
-        "constava": ["constava/data/*"],
+        "constava": ["constava/internal-data/*"],
     },
 )

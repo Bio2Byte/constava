@@ -1,4 +1,6 @@
-"""Stand-alone functions that are used in multiple submodules"""
+"""constava.utils.utils contains stand-alone functions 
+that are used in multiple submodules
+"""
 
 from warnings import warn
 import numpy as np
@@ -39,7 +41,7 @@ def check_dihedral_range(arr: np.ndarray):
         warn(
             (
                 "Provided dihedrals a very small: [{vmin:.3f}, {vmax:.3f}]. "
-                "Please check that convertion to radians was only applied once."
+                "Please check that conversion to radians was only applied once."
             ),
             DihedralRangeWarning(),
         )

@@ -1,4 +1,4 @@
-"""constava.writer contains classes the write the output to different
+"""constava.io.writer contains classes the write the output to different
 data formats."""
 
 import os

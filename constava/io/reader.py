@@ -1,4 +1,4 @@
-"""constava.reader contains the reader interface to read input data"""
+"""constava.io.reader contains the reader interface to read input data"""
 
 from typing import List
 from .rstrategies import ReaderABC, DihedralCsvReader, GmxChiReader, UnknownFileStructureError

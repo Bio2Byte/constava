@@ -1,4 +1,4 @@
-"""constava.calculator contains the calculator class that calculates the
+"""constava.calc.calculator contains the calculator class that calculates the
 conformational state propensities and conformational state variability from
 a protein ensemble
 """

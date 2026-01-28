@@ -1,3 +1,6 @@
+"""
+constava.wrapper.params contains the logic to handle user parameters
+"""
 from dataclasses import dataclass, field
 import typing
 from ..utils.logging import logging
@@ -16,6 +19,7 @@ def set_logger_level(func):
             else:
                 logger.setLevel(logging.DEBUG)
         return rvalue
+
     return _inner_
 
 def set_single_as_list(func):
@@ -30,6 +34,7 @@ def set_single_as_list(func):
             elif not isinstance(__value, typing.Iterable) or isinstance(__value, str):
                 __value = [__value]
         return func(self, __attr, __value)
+
     return _inner_
 
 

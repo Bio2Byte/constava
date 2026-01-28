@@ -1,10 +1,10 @@
-"""constava.methods contains classes representing sub-sampling schemes fro the
+"""constava.calc.methods contains classes representing sub-sampling schemes fro the
 probability state propensity calculations. Multiple of these schemes can be
 dynamically defined on run-time."""
 
 import abc
-import numpy as np
 from typing import Optional
+import numpy as np
 
 
 class SubsamplingMethodError(ValueError):
