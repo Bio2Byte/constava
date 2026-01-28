@@ -3,7 +3,6 @@ conformational state propensities and conformational state variability from
 a protein ensemble
 """
 
-from collections import defaultdict
 import os
 import multiprocessing
 import logging
@@ -80,8 +79,8 @@ class ConfStateCalculator:
     def __init__(
         self, csmodels: ConfStateModelABC, methods: List[SubsamplingABC] = None
     ):
-        """Initializes the calcualtor class with given conformational state
-        models (csmodels) and zero or more subsampling methods.
+        """Initializes the calculator class with given conformational state
+        models (csmodels) and zero or more sub-sampling methods.
 
         Parameters:
         -----------
@@ -89,7 +88,7 @@ class ConfStateCalculator:
                 Probabilistic model of conformational states used for the calculation.
 
             methods : List[SubsamplingABC] = None
-                (Optional) A list of subsampling methods to use in the calculation.
+                (Optional) A list of sub-sampling methods to use in the calculation.
         """
         self.csmodels = csmodels
         self.methods = methods or []
@@ -101,7 +100,7 @@ class ConfStateCalculator:
         self._mp_context = None
 
     def add_method(self, new_method: SubsamplingABC):
-        """Adds a new subsampling methods to the calculator."""
+        """Adds a new sub-sampling methods to the calculator."""
         self.methods.append(new_method)
 
     def close(self):
@@ -167,20 +166,20 @@ class ConfStateCalculator:
     @check_subsampling_methods
     def calculate(self, ensemble: ProteinEnsemble) -> List[ConstavaResults]:
         """Calculates conformational state propensities and conformational
-        state variabilites based on the given model and methods for the
+        state variabilities based on the given model and methods for the
         ProteinEnsemble.
 
         Parameters:
         -----------
             ensemble : ProteinEnsemble
                 A ProteinEnsemble object with the relevant backbone
-                dihedal information of the ensemble.
+                dihedral information of the ensemble.
 
         Returns:
         --------
             results : List[ConstavaResults]
                 A list of ConstavaResults, each representing the same
-                ProteinEnsemble but calculated with one or more subsampling methods.
+                ProteinEnsemble but calculated with one or more sub-sampling methods.
         """
 
         n_residues = ensemble.n_residues
@@ -246,8 +245,6 @@ class ConfStateCalculator:
                     future_to_idx[nfut] = idx
                     in_flight.add(nfut)
 
-        logger.debug(f"Building results for the {len(self.methods)} methods...")
-
         results = [
             ConstavaResults(
                 method=method.getShortName(),
@@ -268,7 +265,5 @@ class ConfStateCalculator:
                     ConstavaResultsEntry(res, state_propensities, state_variability),
                     sorted_insertion=True,
                 )
-
-        logger.debug("All the results have been calculated with success!")
 
         return results

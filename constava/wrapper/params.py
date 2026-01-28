@@ -110,7 +110,7 @@ class ConstavaParameters:
     model_data : str = None
     model_dump : str = None
 
-    # Subsampling Options
+    # Sub-sampling Options
     window : typing.List[int] = field(default_factory=list)
     bootstrap : typing.List[int] = field(default_factory=list)
     window_series : typing.List[int] = field(default_factory=list)
@@ -133,5 +133,5 @@ class ConstavaParameters:
     @set_logger_level
     @set_single_as_list
     def __setattr__(self, __attr, __value) -> None:
-        """Custom function to set attributes, to catch certain special behaviours"""
+        """Custom function to set attributes, to catch certain special behaviors"""
         super().__setattr__(__attr, __value)

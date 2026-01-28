@@ -7,13 +7,9 @@ import numpy as np
 class DihedralRangeError(ValueError):
     """Raised if any dihedral angles are not correctly in radians"""
 
-    pass
-
 
 class DihedralRangeWarning(UserWarning):
     """Raised on the suspicion that  dihedral angles are not correctly in radians"""
-
-    pass
 
 
 def check_dihedral_range(arr: np.ndarray):

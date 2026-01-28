@@ -61,13 +61,12 @@ class ConfStateModelABC(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def from_fitting(cls, training_data_json: str, **kwargs):
         """
-        Loads the probabilistic from a trainign data JSON
+        Loads the probabilistic from a training data JSON
         """
 
-        # pass
 
     def dump_pickle(self, output_file: str):
-        """Save the probabilistic as a pickle.
+        """Save the probabilistic as a pickle file.
 
         Parameters:
         -----------
@@ -79,7 +78,7 @@ class ConfStateModelABC(metaclass=abc.ABCMeta):
 
     @classmethod
     def from_pickle(cls, pickled_file: str):
-        """Load the probabilistic from a pickle.
+        """Load the probabilistic from a pickle file.
 
         Parameters:
         -----------
@@ -201,7 +200,7 @@ class ConfStateModelGrid(ConfStateModelABC):
             List labels for the conformational state models
         state_grid : Array[M,N,N]
             Grid from which probability densities for conformational states are
-            inferred by interpolation between gridpoints.
+            inferred by interpolation between grid points.
         grid_crds: Tuple[Array[N], Array[N]]
             Tuple of two arrays that describe the (phi,psi) coordinates of the
             grid points.
@@ -260,7 +259,7 @@ class ConfStateModelGrid(ConfStateModelABC):
             bandwidth : float
                 Bandwidth of the Gaussian kernel density estimator
             grid_points : int
-                The number of gridpoints between which the PDF will be estimated
+                The number of grid points between which the PDF will be estimated
                 by interpolation. Note, that for generating the grid for both
                 axes sqrt(`grid_points`) are used. Thus, if `grid_points` is not
                 a square number, the final grid_points may be less.

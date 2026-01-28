@@ -67,7 +67,7 @@ class Constava:
     --------
         run()
             Runs Constava with the current parameters. If the parameters have been
-            provided  with the initialisation of the Constava() object, this is the
+            provided  with the initialization of the Constava() object, this is the
             only method necessary to run any analysis.
 
 		# Methods to adjust parameters of the Constava toolkit.
@@ -88,12 +88,12 @@ class Constava:
             Initializes a ResultsWriter for writing output results to a file specified by 'outfile', in the format
             specified by 'file_format', and with float precision specified by 'float_precision' (and indent_size if needed)
         fit_csmodel()
-            Fits a conformational state model to the provided data. Complex method, read its docstrings for details.
+            Fits a conformational state model to the provided data. Complex method, read its docstring for details.
         load_csmodel(pickled_csmodel):
             Loads a conformational state model from a pickled file specified by the 'pickled_csmodel' path.
             initialize_calculator(csmodel=None, window=None, window_series=None, bootstrap=None, bootstrap_series=None,
             bootstrap_samples=500, bootstrap_seed=None):
-                Initializes a ConfStateCalculator with the specified conformational state model 'csmodel', subsampling
+                Initializes a ConfStateCalculator with the specified conformational state model 'csmodel', sub-sampling
                 parameters 'window', 'window_series', 'bootstrap', 'bootstrap_series', and bootstrap parameters
                 'bootstrap_samples' and 'bootstrap_seed'.
 
@@ -155,7 +155,7 @@ class Constava:
 
     def run(self) -> None:
         """Calculate conformational state variabilities and conformational
-        state variabilites with the given parameters."""
+        state variabilities with the given parameters."""
         # Reset results
         self.results = None
 
@@ -198,8 +198,10 @@ class Constava:
 
         # Read input files
         input_files = self.get_param("input_files")
+
         logger.info(f"Reading dihedrals from {len(input_files)} files...")
         logger.debug("\n\t*  ".join(["... input file list:", *input_files]))
+
         ensemble = reader.readFiles(*input_files)
 
         # Do the inference
@@ -208,6 +210,7 @@ class Constava:
 
         # Write results
         logger.info(f"Writing results to file: {writer.filename}")
+
         writer.write_results(self.results)
 
     def initialize_reader(
@@ -229,8 +232,9 @@ class Constava:
         """
         logger.info("Initializing reader for input file(s)...")
         logger.debug(f"... setting reader parameters: {file_format=}, {in_degrees=}")
+
         reader = EnsembleReader(filetype_str=file_format, degrees2radians=in_degrees)
-        
+
         return reader
 
     def initialize_writer(
@@ -261,7 +265,7 @@ class Constava:
         """
         if outfile is None:
             return None
-        
+
         logger.info("Initializing writer for results...")
         logger.debug(
             f"... setting writer parameters: {outfile=}, {file_format=}, {float_precision=} {indent_size=}"
@@ -319,9 +323,9 @@ class Constava:
             bandwidth=kde_bandwidth,
             grid_points=grid_points,
         )
-        
+
         logger.info(f"... model fitted: {csmodel}")
-        
+
         return csmodel
 
     @cache_csmodel
@@ -339,13 +343,13 @@ class Constava:
             csmodel : ConfStateModelABC
                 Probabilistic model describing the conformational states
         """
-        
+
         logger.info(f"Loading conformational state models from file: {pickled_csmodel}")
-        
+
         csmodel = ConfStateModelABC.from_pickle(pickled_csmodel)
-        
+
         logger.info(f"... model loaded: {csmodel}")
-        
+
         return csmodel
 
     def initialize_calculator(
@@ -367,17 +371,17 @@ class Constava:
                 method). If None, the standard model from the publication will
                 be used.
             window : List[int]
-                Subsampling using a moving reading-frame of size <int>. Multiple
+                Sub-sampling using a moving reading-frame of size <int>. Multiple
                 values can be given as a list.
             window_series : List[int]
-                Subsampling using a moving reading-frame of size <int>. Returns
+                Sub-sampling using a moving reading-frame of size <int>. Returns
                 the results for every window rather than the average. Multiple
                 values can be given as a list.
             bootstrap : List[int]
-                Subsampling using by bootstrapping <int> datapoints. Multiple
+                Sub-sampling using by bootstrapping <int> datapoints. Multiple
                 values can be given as a list.
             bootstrap_series : List[int] or int
-                Subsampling using by bootstrapping <int> datapoints. Returns the
+                Sub-sampling using by bootstrapping <int> datapoints. Returns the
                 results for every subsample rather than the average. Multiple
                 values can be given as a list.
             bootstrap_samples : int
@@ -396,7 +400,7 @@ class Constava:
 
         # Initialize the calculator
         logger.info(f"Initializing calculator with {csmodel}...")
-        
+
         calculator = ConfStateCalculator(csmodel)
 
         # Add subsampling methods to calculator

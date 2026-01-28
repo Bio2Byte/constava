@@ -131,14 +131,14 @@ class SubsamplingWindow(SubsamplingABC):
     """
 
     def __init__(self, window_size: int):
-        """Inititialize class to subsample and calcualte conformational state
+        """Initialize class to subsample and calculate conformational state
         propensities and conformational state variability. Sub-sampling is done
         using a sliding window.
 
         Parameters:
         -----------
             window_size : int
-                Size of the sliding window used in subsampling.
+                Size of the sliding window used in sub-sampling.
         """
         self.window_size = window_size
 
@@ -162,13 +162,14 @@ class SubsamplingWindow(SubsamplingABC):
             pdf : Array[M,N]
                 Likelihoods obtained by sub-sampling N times using the described method.
         """
-        # Subsampling using consecutive windows of window_size samples
-        logpdf = np.stack(
+
+        # Sub-sampling using consecutive windows of window_size samples
+        convolved_logpdf = np.stack(
             [np.convolve(x, np.ones((self.window_size,)), mode="valid") for x in logpdf]
         )
 
         # Exponentiation and normalize to obtain likelihoods
-        pdf = np.exp(logpdf)
+        pdf = np.exp(convolved_logpdf)
         pdf /= np.sum(pdf, axis=0)
 
         return pdf
@@ -180,7 +181,7 @@ class SubsamplingWindow(SubsamplingABC):
 class SubsamplingBootstrap(SubsamplingABC):
     """Class to subsample the logPDF values obtained from the probabilistic
     conformational state models and calculate the conformational state
-    propensities and conformational state variability. Subsampling is done
+    propensities and conformational state variability. Sub-sampling is done
     using bootstrapping.
 
     Attributes:
@@ -204,12 +205,12 @@ class SubsamplingBootstrap(SubsamplingABC):
         getShortName()
             Name of the method for reference in the output.
         _subsampling(state_logpdfs)
-            Subsamples from the distribution of original data points.
+            Sub-samples from the distribution of original data points.
     """
 
     def __init__(self, sample_size: int, n_samples=500, seed: Optional[int] = None):
-        """Inititialize class to subsample and calcualte conformational state
-        propensities and conformational state variability. Subsampling is done
+        """Initialize class to subsample and calcualte conformational state
+        propensities and conformational state variability. Sub-sampling is done
         using bootstrapping.
 
         Parameters:
@@ -232,21 +233,22 @@ class SubsamplingBootstrap(SubsamplingABC):
         )
 
     def _subsampling(self, logpdf):
-        """Subsampling from the distribution of logPDF using bootstrapping.
-        `n_samples` are subsampled from the distribution, where each sample
+        """Sub-sampling from the distribution of logPDF using bootstrapping.
+        `n_samples` are sub-sampled from the distribution, where each sample
         contains `sample_size`randomly selected original data points. Finally,
-        liklihoods for each conformational state model are calculated for each
+        likelihoods for each conformational state model are calculated for each
         sample.
 
         Parameters:
         -----------
             logpdf : Array[M,X]
-                log-Probability densities for M states across X original data points.
+                The log-Probability densities for M states across X
+                original data points.
 
-        Retruns:
+        Returns:
         --------
             pdf : Array[M,N]
-                Likelihoods obtained by subsampling N times using the described method.
+                Likelihoods obtained by sub-sampling N times using the described method.
         """
         # Get dimensions of the input data
         n_states, n_measurements = logpdf.shape
@@ -257,16 +259,16 @@ class SubsamplingBootstrap(SubsamplingABC):
         rng = np.random.default_rng(self.seed)
         samples = rng.integers(n_measurements, size=self.sample_size * self.n_samples)
 
-        logpdf = np.reshape(
+        reshaped_logpdf = np.reshape(
             logpdf[:, samples], (n_states, self.n_samples, self.sample_size), order="C"
         )
 
         # Accumulate logpdfs within a sample = logpdf for each of these samples
         # to be sampled from the same conformational state
-        logpdf = np.sum(logpdf, axis=2)
+        aggregated_logpdf = np.sum(reshaped_logpdf, axis=2)
 
-        # Exponentiate and normalize to obtain likelihoods
-        pdf = np.exp(logpdf)
+        # Exponential and normalize to obtain likelihoods
+        pdf = np.exp(aggregated_logpdf)
         pdf /= np.sum(pdf, axis=0)
 
         return pdf
@@ -278,13 +280,13 @@ class SubsamplingBootstrap(SubsamplingABC):
 class SubsamplingWindowSeries(SubsamplingWindow):
     """Class to subsample the logPDF values obtained from the probabilistic
     conformational state models and calculate the conformational state
-    propensities and conformational state variability. Subsampling is done
+    propensities and conformational state variability. Sub-sampling is done
     using a sliding window. For each window the results are returned.
 
     Attributes:
     -----------
         window_size : int
-            Size of the sliding window used in subsampling.
+            Size of the sliding window used in sub-sampling.
 
     Methods:
     --------
@@ -298,7 +300,7 @@ class SubsamplingWindowSeries(SubsamplingWindow):
         getShortName()
             Name of the method for reference in the output.
         _subsampling(state_logpdfs)
-            Subsamples from the distribution of original data points.
+            Sub-samples from the distribution of original data points.
     """
 
     def getShortName(self) -> str:
@@ -332,7 +334,7 @@ class SubsamplingWindowSeries(SubsamplingWindow):
 class SubsamplingBootstrapSeries(SubsamplingBootstrap):
     """Class to subsample the logPDF values obtained from the probabilistic
     conformational state models and calculate the conformational state
-    propensities and conformational state variability. Subsampling is done
+    propensities and conformational state variability. Sub-sampling is done
     using bootstrapping. For each bootstrapped subsample the results are
     returned.
 
@@ -357,7 +359,7 @@ class SubsamplingBootstrapSeries(SubsamplingBootstrap):
         getShortName()
             Name of the method for reference in the output.
         _subsampling(state_logpdfs)
-            Subsamples from the distribution of original data points.
+            Sub-samples from the distribution of original data points.
     """
 
     def getShortName(self) -> str:
@@ -385,6 +387,8 @@ class SubsamplingBootstrapSeries(SubsamplingBootstrap):
                 Conformational state distances from the average
         """
         mean_likelihoods = np.mean(state_likelihoods, axis=1)
+
         squard_dev = np.sum((state_likelihoods.T - mean_likelihoods) ** 2, axis=1)
         state_var = np.sqrt(squard_dev)
+
         return state_var

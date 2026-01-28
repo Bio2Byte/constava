@@ -1,7 +1,9 @@
 """constava.dihedrals is a stand-alone executable script that extracts the
 phi/psi backbone dihedral angles from a conformational ensmeble."""
 
-import argparse, os, sys
+import argparse
+import os
+import sys
 from typing import List, NamedTuple
 
 import MDAnalysis as mda
@@ -104,6 +106,7 @@ def calculate_dihedrals(
     """
     # Load trajectory files
     u = mda.Universe(structure, trajectory)
+    
     # Calculate dihedral angles.
     rama = Ramachandran(u.select_atoms(selection))
     rama.run()
@@ -113,8 +116,10 @@ def calculate_dihedrals(
     else:
         phicol, psicol = "Phi[rad]", "Psi[rad]"
         results = np.radians(rama.results.angles)
+    
     # Convert resulting numpy array into a comprehensive DataFrame
     dihedrals = pd.DataFrame(columns=["#Frame", "ResIndex", "ResName", phicol, psicol])
+    
     # Iterate over selection (C-alphas) used to define the dihedrals
     for i, atom in enumerate(rama.ag3):
         # Select results for given
@@ -128,6 +133,7 @@ def calculate_dihedrals(
             }
         )
         dihedrals = pd.concat([dihedrals, df], ignore_index=True)
+    
     return dihedrals
 
 
@@ -140,6 +146,7 @@ def main(cmdline_arguments: List[str]):
     dihedrals = calculate_dihedrals(
         args.structure, args.trajectory, args.selection, args.degrees
     )
+    
     # Write results
     float2str = f"%.{args.precision}f"  # Definition of float format in output
     dihedrals.to_csv(args.output, header=True, index=False, float_format=float2str)
