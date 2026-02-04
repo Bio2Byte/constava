@@ -3,13 +3,15 @@ PACKAGE_NAME = constava
 .PHONY: build install uninstall publish clean
 
 build:
-	python3 setup.py sdist bdist_wheel
+# 	python3 setup.py sdist bdist_wheel
+	python3 -m build
 
 install:
-	pip install dist/$(PACKAGE_NAME)-*.tar.gz
+	python3 -m pip install dist/$(PACKAGE_NAME)-*.tar.gz
 
+.PHONY: test
 test:
-	python -m $(PACKAGE_NAME) test
+	constava test
 
 uninstall:
 	-pip uninstall -y $(PACKAGE_NAME)
